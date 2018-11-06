@@ -1,13 +1,14 @@
 package lorca
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 )
 
 type UI interface {
 	Load(url string) error
-	Bind(name string, f func([]interface{}) (interface{}, error)) error
+	Bind(name string, f func([]json.RawMessage) (interface{}, error)) error
 	Eval(js string) (interface{}, error)
 	Close() error
 	Done() <-chan struct{}
@@ -58,24 +59,6 @@ func New(url string, dir string, width, height int, customArgs ...string) (UI, e
 		return nil, err
 	}
 
-	for method, args := range map[string]h{
-		"Page.enable":                    nil,
-		"Target.setAutoAttach":           h{"autoAttach": true, "waitForDebuggerOnStart": false},
-		"Page.setLifecycleEventsEnabled": h{"enabled": true},
-		"Network.enable":                 nil,
-		"Runtime.enable":                 nil,
-		"Security.enable":                nil,
-		"Performance.enable":             nil,
-		"Log.enable":                     nil,
-	} {
-		if v, err := chrome.send(method, args); err != nil {
-			chrome.kill()
-			chrome.cmd.Wait()
-			return nil, err
-		} else {
-			log.Println(method, v)
-		}
-	}
 	go func() {
 		log.Println("wait started")
 		chrome.cmd.Wait()
@@ -94,7 +77,7 @@ func (u *ui) Close() error {
 }
 
 func (u *ui) Load(url string) error { return u.chrome.load(url) }
-func (u *ui) Bind(name string, f func([]interface{}) (interface{}, error)) error {
+func (u *ui) Bind(name string, f func([]json.RawMessage) (interface{}, error)) error {
 	return u.chrome.bind(name, f)
 }
 func (u *ui) Eval(js string) (interface{}, error) { return u.chrome.eval(js) }

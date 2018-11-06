@@ -17,11 +17,15 @@ import (
 
 type h = map[string]interface{}
 
+// Result is a struct for the resulting value of the JS expression or an error.
 type result struct {
-	Value interface{}
+	Value json.RawMessage
 	Err   error
 }
 
+type bindingFunc func(args []json.RawMessage) (interface{}, error)
+
+// Msg is a struct for incoming messages (results and async events)
 type msg struct {
 	ID     int             `json:"id"`
 	Result json.RawMessage `json:"result"`
@@ -37,7 +41,7 @@ type chrome struct {
 	id       int32
 	session  string
 	pending  map[int]chan result
-	bindings map[string]func([]interface{}) (interface{}, error)
+	bindings map[string]bindingFunc
 }
 
 func newChromeWithArgs(chromeBinary string, args ...string) (*chrome, error) {
@@ -45,7 +49,7 @@ func newChromeWithArgs(chromeBinary string, args ...string) (*chrome, error) {
 	c := &chrome{
 		id:       2,
 		pending:  map[int]chan result{},
-		bindings: map[string]func([]interface{}) (interface{}, error){},
+		bindings: map[string]bindingFunc{},
 	}
 
 	// Start chrome process
@@ -87,6 +91,22 @@ func newChromeWithArgs(chromeBinary string, args ...string) (*chrome, error) {
 		return nil, err
 	}
 	go c.readLoop()
+	for method, args := range map[string]h{
+		"Page.enable":                    nil,
+		"Target.setAutoAttach":           h{"autoAttach": true, "waitForDebuggerOnStart": false},
+		"Page.setLifecycleEventsEnabled": h{"enabled": true},
+		"Network.enable":                 nil,
+		"Runtime.enable":                 nil,
+		"Security.enable":                nil,
+		"Performance.enable":             nil,
+		"Log.enable":                     nil,
+	} {
+		if _, err := c.send(method, args); err != nil {
+			c.kill()
+			c.cmd.Wait()
+			return nil, err
+		}
+	}
 	return c, nil
 }
 
@@ -171,11 +191,11 @@ func (c *chrome) readLoop() {
 				} `json:"error"`
 				Result struct {
 					Result struct {
-						Type        string      `json:"type"`
-						Subtype     string      `json:"subtype"`
-						Description string      `json:"description"`
-						Value       interface{} `json:"value"`
-						ObjectID    string      `json:"objectId"`
+						Type        string          `json:"type"`
+						Subtype     string          `json:"subtype"`
+						Description string          `json:"description"`
+						Value       json.RawMessage `json:"value"`
+						ObjectID    string          `json:"objectId"`
 					} `json:"result"`
 				} `json:"result"`
 			}{}
@@ -183,9 +203,9 @@ func (c *chrome) readLoop() {
 
 			if res.ID == 0 && res.Method == "Runtime.bindingCalled" {
 				payload := struct {
-					Name string        `json:"name"`
-					Seq  int           `json:"seq"`
-					Args []interface{} `json:"args"`
+					Name string            `json:"name"`
+					Seq  int               `json:"seq"`
+					Args []json.RawMessage `json:"args"`
 				}{}
 				json.Unmarshal([]byte(res.Params.Payload), &payload)
 
@@ -228,7 +248,7 @@ func (c *chrome) readLoop() {
 	}
 }
 
-func (c *chrome) send(method string, params h) (interface{}, error) {
+func (c *chrome) send(method string, params h) (json.RawMessage, error) {
 	id := atomic.AddInt32(&c.id, 1)
 	b, err := json.Marshal(h{"id": int(id), "method": method, "params": params})
 	if err != nil {
@@ -255,11 +275,11 @@ func (c *chrome) load(url string) error {
 	return err
 }
 
-func (c *chrome) eval(expr string) (interface{}, error) {
+func (c *chrome) eval(expr string) (json.RawMessage, error) {
 	return c.send("Runtime.evaluate", h{"expression": expr, "awaitPromise": true, "returnByValue": true})
 }
 
-func (c *chrome) bind(name string, f func([]interface{}) (interface{}, error)) error {
+func (c *chrome) bind(name string, f bindingFunc) error {
 	c.Lock()
 	c.bindings[name] = f
 	c.Unlock()
@@ -284,6 +304,10 @@ func (c *chrome) bind(name string, f func([]interface{}) (interface{}, error)) e
 	};
 	`, name)
 	_, err := c.send("Page.addScriptToEvaluateOnNewDocument", h{"source": script})
+	if err != nil {
+		return err
+	}
+	_, err = c.eval(script)
 	return err
 }
 
