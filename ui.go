@@ -68,7 +68,7 @@ func New(url string, dir string, width, height int, customArgs ...string) (UI, e
 		"Performance.enable":             nil,
 		"Log.enable":                     nil,
 	} {
-		if v, err := chrome.Send(method, args); err != nil {
+		if v, err := chrome.send(method, args); err != nil {
 			chrome.kill()
 			chrome.cmd.Wait()
 			return nil, err
@@ -77,10 +77,12 @@ func New(url string, dir string, width, height int, customArgs ...string) (UI, e
 		}
 	}
 	go func() {
+		log.Println("wait started")
 		chrome.cmd.Wait()
+		log.Println("wait done")
 		close(done)
 	}()
-	return &ui{chrome: chrome}, nil
+	return &ui{chrome: chrome, done: done}, nil
 }
 
 func (u *ui) Done() <-chan struct{} {
@@ -91,15 +93,8 @@ func (u *ui) Close() error {
 	return u.chrome.kill()
 }
 
-func (u *ui) Load(url string) error {
-	_, err := u.chrome.Send("Page.navigate", h{"url": url})
-	return err
-}
-
+func (u *ui) Load(url string) error { return u.chrome.load(url) }
 func (u *ui) Bind(name string, f func([]interface{}) (interface{}, error)) error {
 	return u.chrome.bind(name, f)
 }
-
-func (u *ui) Eval(js string) (interface{}, error) {
-	return u.chrome.Send("Runtime.evaluate", h{"expression": js, "awaitPromise": true, "returnByValue": true})
-}
+func (u *ui) Eval(js string) (interface{}, error) { return u.chrome.eval(js) }

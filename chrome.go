@@ -196,13 +196,13 @@ func (c *chrome) readLoop() {
 					go func() {
 						r, err := binding(payload.Args)
 						b, err := json.Marshal(r)
-						// TOOD: handle errors
+						// TODO: handle errors
 						_ = err
 						expr := fmt.Sprintf(`
 						window['%[1]s']['callbacks'].get(%[2]d)('%[3]s');
 						window['%[1]s']['callbacks'].delete(%[2]d);
 						`, payload.Name, payload.Seq, string(b))
-						c.Send("Runtime.evaluate", h{"expression": expr, "contextId": res.Params.ID})
+						c.send("Runtime.evaluate", h{"expression": expr, "contextId": res.Params.ID})
 					}()
 				}
 				continue
@@ -228,7 +228,7 @@ func (c *chrome) readLoop() {
 	}
 }
 
-func (c *chrome) Send(method string, params h) (interface{}, error) {
+func (c *chrome) send(method string, params h) (interface{}, error) {
 	id := atomic.AddInt32(&c.id, 1)
 	b, err := json.Marshal(h{"id": int(id), "method": method, "params": params})
 	if err != nil {
@@ -250,11 +250,20 @@ func (c *chrome) Send(method string, params h) (interface{}, error) {
 	return res.Value, res.Err
 }
 
+func (c *chrome) load(url string) error {
+	_, err := c.send("Page.navigate", h{"url": url})
+	return err
+}
+
+func (c *chrome) eval(expr string) (interface{}, error) {
+	return c.send("Runtime.evaluate", h{"expression": expr, "awaitPromise": true, "returnByValue": true})
+}
+
 func (c *chrome) bind(name string, f func([]interface{}) (interface{}, error)) error {
 	c.Lock()
 	c.bindings[name] = f
 	c.Unlock()
-	if _, err := c.Send("Runtime.addBinding", h{"name": name}); err != nil {
+	if _, err := c.send("Runtime.addBinding", h{"name": name}); err != nil {
 		return err
 	}
 	script := fmt.Sprintf(`
@@ -274,7 +283,7 @@ func (c *chrome) bind(name string, f func([]interface{}) (interface{}, error)) e
 		return promise;
 	};
 	`, name)
-	_, err := c.Send("Page.addScriptToEvaluateOnNewDocument", h{"source": script})
+	_, err := c.send("Page.addScriptToEvaluateOnNewDocument", h{"source": script})
 	return err
 }
 
@@ -284,6 +293,7 @@ func (c *chrome) kill() error {
 			return err
 		}
 	}
+	// TODO: cancel all pending requests
 	return c.cmd.Process.Kill()
 }
 
