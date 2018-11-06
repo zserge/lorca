@@ -213,15 +213,25 @@ func (c *chrome) readLoop() {
 				binding, ok := c.bindings[res.Params.Name]
 				c.Unlock()
 				if ok {
+					jsString := func(v interface{}) string { b, _ := json.Marshal(v); return string(b) }
 					go func() {
-						r, err := binding(payload.Args)
-						b, err := json.Marshal(r)
-						// TODO: handle errors
-						_ = err
+						result, error := "", ""
+						if r, err := binding(payload.Args); err != nil {
+							error = err.Error()
+						} else if b, err := json.Marshal(r); err != nil {
+							error = err.Error()
+						} else {
+							result = string(b)
+						}
 						expr := fmt.Sprintf(`
-						window['%[1]s']['callbacks'].get(%[2]d)('%[3]s');
-						window['%[1]s']['callbacks'].delete(%[2]d);
-						`, payload.Name, payload.Seq, string(b))
+							if (%[4]s) {
+								window['%[1]s']['errors'].get(%[2]d)(%[4]s);
+							} else {
+								window['%[1]s']['callbacks'].get(%[2]d)(%[3]s);
+							}
+							window['%[1]s']['callbacks'].delete(%[2]d);
+							window['%[1]s']['errors'].delete(%[2]d);
+							`, payload.Name, payload.Seq, jsString(result), jsString(error))
 						c.send("Runtime.evaluate", h{"expression": expr, "contextId": res.Params.ID})
 					}()
 				}
@@ -291,14 +301,22 @@ func (c *chrome) bind(name string, f bindingFunc) error {
 	const binding = window[bindingName];
 	window[bindingName] = async (...args) => {
 		const me = window[bindingName];
+		let errors = me['errors'];
 		let callbacks = me['callbacks'];
 		if (!callbacks) {
 			callbacks = new Map();
 			me['callbacks'] = callbacks;
 		}
+		if (!errors) {
+			errors = new Map();
+			me['errors'] = callbacks;
+		}
 		const seq = (me['lastSeq'] || 0) + 1;
 		me['lastSeq'] = seq;
-		const promise = new Promise(fulfill => callbacks.set(seq, fulfill));
+		const promise = new Promise((resolve, reject) => {
+			callbacks.set(seq, resolve);
+			errors.set(seq, reject);
+		});
 		binding(JSON.stringify({name: bindingName, seq, args}));
 		return promise;
 	};

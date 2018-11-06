@@ -74,7 +74,7 @@ func TestChromeBind(t *testing.T) {
 	}
 	defer c.kill()
 
-	c.bind("add", func(args []json.RawMessage) (interface{}, error) {
+	if err := c.bind("add", func(args []json.RawMessage) (interface{}, error) {
 		a, b := 0, 0
 		if len(args) != 2 {
 			return nil, errors.New("2 arguments expected")
@@ -86,7 +86,9 @@ func TestChromeBind(t *testing.T) {
 			return nil, err
 		}
 		return a + b, nil
-	})
+	}); err != nil {
+		t.Fatal(err)
+	}
 
 	if res, err := c.eval(`window.add(2, 3)`); err != nil {
 		t.Fatal(err)
@@ -94,11 +96,10 @@ func TestChromeBind(t *testing.T) {
 		t.Fatal(string(res))
 	}
 
-	// FIXME:
-	// if res, err := c.eval(`window.add("foo", "bar")`); err == nil {
-	//	t.Fatal(string(res), err)
-	// }
-	// if res, err := c.eval(`window.add(1, 2, 3)`); err == nil {
-	//	t.Fatal(res, err)
-	// }
+	if res, err := c.eval(`window.add("foo", "bar")`); err == nil {
+		t.Fatal(string(res), err)
+	}
+	if res, err := c.eval(`window.add(1, 2, 3)`); err == nil {
+		t.Fatal(res, err)
+	}
 }
