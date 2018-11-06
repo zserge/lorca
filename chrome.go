@@ -163,6 +163,33 @@ func (c *chrome) startSession(target string) (string, error) {
 	}
 }
 
+type targetMessage struct {
+	ID     int    `json:"id"`
+	Method string `json:"method"`
+	Params struct {
+		Name    string `json:"name"`
+		Payload string `json:"payload"`
+		ID      int    `json:"executionContextId"`
+	} `json:"params"`
+	Error struct {
+		Message string `json:"message"`
+	} `json:"error"`
+	Result struct {
+		Result struct {
+			Type        string          `json:"type"`
+			Subtype     string          `json:"subtype"`
+			Description string          `json:"description"`
+			Value       json.RawMessage `json:"value"`
+			ObjectID    string          `json:"objectId"`
+		} `json:"result"`
+		Exception struct {
+			Exception struct {
+				Value json.RawMessage `json:"value"`
+			} `json:"exception"`
+		} `json:"exceptionDetails"`
+	} `json:"result"`
+}
+
 func (c *chrome) readLoop() {
 	for {
 		m := msg{}
@@ -178,32 +205,7 @@ func (c *chrome) readLoop() {
 			if params.SessionID != c.session {
 				continue
 			}
-			res := struct {
-				ID     int    `json:"id"`
-				Method string `json:"method"`
-				Params struct {
-					Name    string `json:"name"`
-					Payload string `json:"payload"`
-					ID      int    `json:"executionContextId"`
-				} `json:"params"`
-				Error struct {
-					Message string `json:"message"`
-				} `json:"error"`
-				Result struct {
-					Result struct {
-						Type        string          `json:"type"`
-						Subtype     string          `json:"subtype"`
-						Description string          `json:"description"`
-						Value       json.RawMessage `json:"value"`
-						ObjectID    string          `json:"objectId"`
-					} `json:"result"`
-					Exception struct {
-						Exception struct {
-							Value json.RawMessage `json:"value"`
-						} `json:"exception"`
-					} `json:"exceptionDetails"`
-				} `json:"result"`
-			}{}
+			res := targetMessage{}
 			json.Unmarshal([]byte(params.Message), &res)
 
 			if res.ID == 0 && res.Method == "Runtime.bindingCalled" {
@@ -316,7 +318,7 @@ func (c *chrome) bind(name string, f bindingFunc) error {
 		}
 		if (!errors) {
 			errors = new Map();
-			me['errors'] = callbacks;
+			me['errors'] = errors;
 		}
 		const seq = (me['lastSeq'] || 0) + 1;
 		me['lastSeq'] = seq;

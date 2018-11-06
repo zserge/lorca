@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 )
 
@@ -101,5 +103,42 @@ func TestChromeBind(t *testing.T) {
 	}
 	if res, err := c.eval(`window.add(1, 2, 3)`); err == nil {
 		t.Fatal(res, err)
+	}
+}
+
+func TestChromeAsync(t *testing.T) {
+	c, err := newChromeWithArgs(ChromeExecutable(), "--user-data-dir=/tmp", "--headless", "--remote-debugging-port=0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.kill()
+
+	if err := c.bind("len", func(args []json.RawMessage) (interface{}, error) {
+		return len(args[0]), nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	wg := &sync.WaitGroup{}
+	n := 10
+	failed := int32(0)
+	wg.Add(n)
+	for i := 0; i < n; i++ {
+		go func(i int) {
+			defer wg.Done()
+			v, err := c.eval("len('hello')")
+			if string(v) != `"7"` {
+				t.Log(i, "value", string(v), "err", err)
+				atomic.StoreInt32(&failed, 1)
+			} else if err != nil {
+				t.Log(i, "error", err)
+				atomic.StoreInt32(&failed, 2)
+			}
+		}(i)
+	}
+	wg.Wait()
+
+	if status := atomic.LoadInt32(&failed); status != 0 {
+		t.Fatal()
 	}
 }
