@@ -26,8 +26,8 @@ func TestChromeEval(t *testing.T) {
 		{Expr: `(() => ([1,'foo',false]))()`, Result: `[1,"foo",false]`},
 		{Expr: `((a, b) => a*b)(3, 7)`, Result: `21`},
 		{Expr: `Promise.resolve(42)`, Result: `42`},
-		{Expr: `Promise.reject('foo')`, Result: `"foo"`}, // FIXME this should be an error
-		{Expr: `throw "bar"`, Result: `"bar"`},           // FIXME this should be an error
+		{Expr: `Promise.reject('foo')`, Error: `"foo"`},
+		{Expr: `throw "bar"`, Error: `"bar"`},
 		{Expr: `2+`, Error: `SyntaxError: Unexpected end of input`},
 	} {
 		result, err := c.eval(test.Expr)

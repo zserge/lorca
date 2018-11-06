@@ -197,6 +197,11 @@ func (c *chrome) readLoop() {
 						Value       json.RawMessage `json:"value"`
 						ObjectID    string          `json:"objectId"`
 					} `json:"result"`
+					Exception struct {
+						Exception struct {
+							Value json.RawMessage `json:"value"`
+						} `json:"exception"`
+					} `json:"exceptionDetails"`
 				} `json:"result"`
 			}{}
 			json.Unmarshal([]byte(params.Message), &res)
@@ -249,6 +254,8 @@ func (c *chrome) readLoop() {
 
 			if res.Error.Message != "" {
 				resc <- result{Err: errors.New(res.Error.Message)}
+			} else if res.Result.Exception.Exception.Value != nil {
+				resc <- result{Err: errors.New(string(res.Result.Exception.Exception.Value))}
 			} else if res.Result.Result.Type == "object" && res.Result.Result.Subtype == "error" {
 				resc <- result{Err: errors.New(res.Result.Result.Description)}
 			} else {
