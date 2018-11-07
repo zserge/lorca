@@ -23,8 +23,6 @@ type ui struct {
 	tmpDir string
 }
 
-var ChromeExecutable = func() string { return "chromium-browser" }
-
 var defaultChromeArgs = []string{
 	"--disable-background-networking",
 	"--disable-background-timer-throttling",
