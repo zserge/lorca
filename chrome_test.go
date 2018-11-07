@@ -127,11 +127,9 @@ func TestChromeAsync(t *testing.T) {
 		go func(i int) {
 			defer wg.Done()
 			v, err := c.eval("len('hello')")
-			if string(v) != `"7"` {
-				t.Log(i, "value", string(v), "err", err)
+			if string(v) != `7` {
 				atomic.StoreInt32(&failed, 1)
 			} else if err != nil {
-				t.Log(i, "error", err)
 				atomic.StoreInt32(&failed, 2)
 			}
 		}(i)
