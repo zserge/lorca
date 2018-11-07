@@ -93,8 +93,8 @@ func newChromeWithArgs(chromeBinary string, args ...string) (*chrome, error) {
 	go c.readLoop()
 	for method, args := range map[string]h{
 		"Page.enable":                    nil,
-		"Target.setAutoAttach":           h{"autoAttach": true, "waitForDebuggerOnStart": false},
-		"Page.setLifecycleEventsEnabled": h{"enabled": true},
+		"Target.setAutoAttach":           {"autoAttach": true, "waitForDebuggerOnStart": false},
+		"Page.setLifecycleEventsEnabled": {"enabled": true},
 		"Network.enable":                 nil,
 		"Runtime.enable":                 nil,
 		"Security.enable":                nil,
