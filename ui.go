@@ -9,6 +9,7 @@ import (
 	"reflect"
 )
 
+// UI interface allows talking to the HTML5 UI from Go.
 type UI interface {
 	Load(url string) error
 	Bind(name string, f interface{}) error
@@ -49,17 +50,23 @@ var defaultChromeArgs = []string{
 	"--use-mock-keychain",
 }
 
+// New returns a new HTML5 UI for the given URL, user profile directory, window
+// size and other options passed to the browser engine. If URL is an empty
+// string - a blank page is displayed. If user profile directory is an empty
+// string - a temporary direction is created and it will be removed on
+// ui.Close(). You might want to use "--headless" custom CLI argument to test
+// your UI code.
 func New(url string, dir string, width, height int, customArgs ...string) (UI, error) {
 	if url == "" {
 		url = "data:text/html,<html></html>"
 	}
 	tmpDir := ""
 	if dir == "" {
-		if name, err := ioutil.TempDir("", "lorca"); err != nil {
+		name, err := ioutil.TempDir("", "lorca")
+		if err != nil {
 			return nil, err
-		} else {
-			dir, tmpDir = name, name
 		}
+		dir, tmpDir = name, name
 	}
 	args := append(defaultChromeArgs, fmt.Sprintf("--app=%s", url))
 	args = append(args, fmt.Sprintf("--user-data-dir=%s", dir))
@@ -132,9 +139,8 @@ func (u *ui) Bind(name string, f interface{}) error {
 			// One result may be a value, or an error
 			if res[0].Type().Implements(errorType) {
 				return nil, res[0].Interface().(error)
-			} else {
-				return res[0].Interface(), nil
 			}
+			return res[0].Interface(), nil
 		case 2:
 			// Two results: first one is value, second is error
 			if !res[1].Type().Implements(errorType) {
@@ -142,9 +148,8 @@ func (u *ui) Bind(name string, f interface{}) error {
 			}
 			if res[1].Interface() == nil {
 				return res[0].Interface(), nil
-			} else {
-				return res[0].Interface(), res[1].Interface().(error)
 			}
+			return res[0].Interface(), res[1].Interface().(error)
 		default:
 			return nil, errors.New("unexpected number of return values")
 		}

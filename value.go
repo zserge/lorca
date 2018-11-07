@@ -2,6 +2,8 @@ package lorca
 
 import "encoding/json"
 
+// Value is a generic type of a JSON value (primitive, object, array) and
+// optionally an error value.
 type Value interface {
 	Err() error
 	To(interface{}) error

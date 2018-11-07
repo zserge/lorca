@@ -2,6 +2,8 @@ package lorca
 
 import "os"
 
+// ChromeExecutable returns a string which points to the preferred Chrome
+// executable file.
 var ChromeExecutable = locateChrome
 
 func locateChrome() string {

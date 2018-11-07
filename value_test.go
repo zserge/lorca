@@ -6,11 +6,11 @@ import (
 	"testing"
 )
 
-var testError = errors.New("fail")
+var errTest = errors.New("fail")
 
 func TestValueError(t *testing.T) {
-	v := value{err: testError}
-	if v.Err() != testError {
+	v := value{err: errTest}
+	if v.Err() != errTest {
 		t.Fail()
 	}
 
@@ -29,7 +29,7 @@ func TestValuePrimitive(t *testing.T) {
 	if v.Int() != 0 {
 		t.Fail()
 	}
-	v = value{err: testError}
+	v = value{err: errTest}
 	if v.Int() != 0 {
 		t.Fail()
 	}
@@ -37,7 +37,7 @@ func TestValuePrimitive(t *testing.T) {
 	if v.String() != "hello" {
 		t.Fail()
 	}
-	v = value{err: testError}
+	v = value{err: errTest}
 	if v.String() != "" {
 		t.Fail()
 	}
