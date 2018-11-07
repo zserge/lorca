@@ -75,7 +75,11 @@ func (u *ui) Done() <-chan struct{} {
 }
 
 func (u *ui) Close() error {
-	return u.chrome.kill()
+	if err := u.chrome.kill(); err != nil {
+		return err
+	}
+	<-u.done
+	return nil
 }
 
 func (u *ui) Load(url string) error { return u.chrome.load(url) }
