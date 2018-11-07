@@ -101,6 +101,13 @@ func main() {
 	// Load HTML, a local web server on a random port would also work
 	ui.Load("data:text/html," + url.PathEscape(html))
 
+	// You may use console.log to debug your JS code, it will be printed via
+	// log.Println(). Also exceptions are printed in a similar manner.
+	ui.Eval(`
+		console.log("Hello, world!");
+		console.log('Multiple values:', [1, false, {"x":5}]);
+	`)
+
 	// Wait until the interrupt signal arrives or browser window is closed
 	sigc := make(chan os.Signal)
 	signal.Notify(sigc, os.Interrupt)

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os/exec"
 	"regexp"
 	"sync"
@@ -169,6 +170,10 @@ type targetMessage struct {
 		Name    string `json:"name"`
 		Payload string `json:"payload"`
 		ID      int    `json:"executionContextId"`
+		Args    []struct {
+			Type  string      `json:"type"`
+			Value interface{} `json:'value"`
+		} `json:"args"`
 	} `json:"params"`
 	Error struct {
 		Message string `json:"message"`
@@ -207,7 +212,9 @@ func (c *chrome) readLoop() {
 			res := targetMessage{}
 			json.Unmarshal([]byte(params.Message), &res)
 
-			if res.ID == 0 && res.Method == "Runtime.bindingCalled" {
+			if res.ID == 0 && res.Method == "Runtime.consoleAPICalled" || res.Method == "Runtime.exceptionThrown" {
+				log.Println(params.Message)
+			} else if res.ID == 0 && res.Method == "Runtime.bindingCalled" {
 				payload := struct {
 					Name string            `json:"name"`
 					Seq  int               `json:"seq"`
