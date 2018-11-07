@@ -2,14 +2,15 @@ package lorca
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"log"
+	"reflect"
 )
 
 type UI interface {
 	Load(url string) error
-	Bind(name string, f func([]json.RawMessage) (interface{}, error)) error
-	Eval(js string) (interface{}, error)
+	Bind(name string, f interface{}) error
+	Eval(js string) Value
 	Close() error
 	Done() <-chan struct{}
 }
@@ -60,9 +61,7 @@ func New(url string, dir string, width, height int, customArgs ...string) (UI, e
 	}
 
 	go func() {
-		log.Println("wait started")
 		chrome.cmd.Wait()
-		log.Println("wait done")
 		close(done)
 	}()
 	return &ui{chrome: chrome, done: done}, nil
@@ -77,7 +76,59 @@ func (u *ui) Close() error {
 }
 
 func (u *ui) Load(url string) error { return u.chrome.load(url) }
-func (u *ui) Bind(name string, f func([]json.RawMessage) (interface{}, error)) error {
-	return u.chrome.bind(name, f)
+
+func (u *ui) Bind(name string, f interface{}) error {
+	v := reflect.ValueOf(f)
+	// f must be a function
+	if v.Kind() != reflect.Func {
+		return errors.New("only functions can be bound")
+	}
+	// f must return either value and error or just error
+	if n := v.Type().NumOut(); n > 2 {
+		return errors.New("function may only return a value or a value+error")
+	}
+
+	return u.chrome.bind(name, func(raw []json.RawMessage) (interface{}, error) {
+		if len(raw) != v.Type().NumIn() {
+			return nil, errors.New("function arguments mismatch")
+		}
+		args := []reflect.Value{}
+		for i := range raw {
+			arg := reflect.New(v.Type().In(i))
+			if err := json.Unmarshal(raw[i], arg.Interface()); err != nil {
+				return nil, err
+			}
+			args = append(args, arg.Elem())
+		}
+		errorType := reflect.TypeOf((*error)(nil)).Elem()
+		res := v.Call(args)
+		switch len(res) {
+		case 0:
+			// No results from the function, just return nil
+			return nil, nil
+		case 1:
+			// One result may be a value, or an error
+			if res[0].Type().Implements(errorType) {
+				return nil, res[0].Interface().(error)
+			} else {
+				return res[0].Interface(), nil
+			}
+		case 2:
+			if !res[1].Type().Implements(errorType) {
+				return nil, errors.New("second return value must be an error")
+			}
+			if res[1].Interface() == nil {
+				return res[0].Interface(), nil
+			} else {
+				return res[0].Interface(), res[1].Interface().(error)
+			}
+		default:
+			return nil, errors.New("unexpected number of return values")
+		}
+	})
 }
-func (u *ui) Eval(js string) (interface{}, error) { return u.chrome.eval(js) }
+
+func (u *ui) Eval(js string) Value {
+	v, err := u.chrome.eval(js)
+	return value{err: err, raw: v}
+}

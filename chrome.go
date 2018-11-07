@@ -222,11 +222,11 @@ func (c *chrome) readLoop() {
 				if ok {
 					jsString := func(v interface{}) string { b, _ := json.Marshal(v); return string(b) }
 					go func() {
-						result, error := "", ""
+						result, error := "", `""`
 						if r, err := binding(payload.Args); err != nil {
-							error = err.Error()
+							error = jsString(err.Error())
 						} else if b, err := json.Marshal(r); err != nil {
-							error = err.Error()
+							error = jsString(err.Error())
 						} else {
 							result = string(b)
 						}
@@ -238,7 +238,7 @@ func (c *chrome) readLoop() {
 							}
 							window['%[1]s']['callbacks'].delete(%[2]d);
 							window['%[1]s']['errors'].delete(%[2]d);
-							`, payload.Name, payload.Seq, jsString(result), jsString(error))
+							`, payload.Name, payload.Seq, result, error)
 						c.send("Runtime.evaluate", h{"expression": expr, "contextId": res.Params.ID})
 					}()
 				}
@@ -305,7 +305,7 @@ func (c *chrome) bind(name string, f bindingFunc) error {
 	if _, err := c.send("Runtime.addBinding", h{"name": name}); err != nil {
 		return err
 	}
-	script := fmt.Sprintf(`
+	script := fmt.Sprintf(`(() => {
 	const bindingName = '%s';
 	const binding = window[bindingName];
 	window[bindingName] = async (...args) => {
@@ -328,7 +328,7 @@ func (c *chrome) bind(name string, f bindingFunc) error {
 		});
 		binding(JSON.stringify({name: bindingName, seq, args}));
 		return promise;
-	};
+	}})();
 	`, name)
 	_, err := c.send("Page.addScriptToEvaluateOnNewDocument", h{"source": script})
 	if err != nil {

@@ -94,7 +94,7 @@ func TestChromeBind(t *testing.T) {
 
 	if res, err := c.eval(`window.add(2, 3)`); err != nil {
 		t.Fatal(err)
-	} else if string(res) != `"5"` {
+	} else if string(res) != `5` {
 		t.Fatal(string(res))
 	}
 
