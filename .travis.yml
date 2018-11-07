@@ -4,8 +4,17 @@ dist: trusty
 language: go
 
 go: 
- - 1.x
+  - 1.x
 
 install:
   - sudo apt-get -qq update
   - sudo apt-get -qq install -y chromium-browser
+
+env: GO111MODULE=on CGO_ENABLED=0
+
+install:
+  - go mod download
+
+script:
+  - go build ./example
+  - go test -v ./...
