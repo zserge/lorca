@@ -16,7 +16,7 @@ ui, err := lorca.New("", "", 480, 320)
 defer ui.Close()
 
 // Bind Go function to be available in JS. Go function may be long-running and
-blocking - in JS it's represented with a Promise.
+// blocking - in JS it's represented with a Promise.
 ui.Bind("add", func(a, b int) int { return a + b })
 
 // Call JS function from Go. Functions may be asynchronous, i.e. return promises
