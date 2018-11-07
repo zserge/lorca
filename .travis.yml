@@ -19,5 +19,5 @@ install:
   - go mod download
 
 script:
-  - go build ./example
+  - go build ./example -o example-app
   - go test -v ./...
