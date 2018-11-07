@@ -1,4 +1,4 @@
-# lorca
+# Lorca
 
 [![Build Status](https://travis-ci.org/zserge/lorca.svg?branch=master)](https://travis-ci.org/zserge/lorca)
 [![GoDoc](https://godoc.org/github.com/zserge/lorca?status.svg)](https://godoc.org/github.com/zserge/lorca)
@@ -52,6 +52,17 @@ a local web server would also solve the problem.
 I would recommend using an architecture similar to Redux, where Go code would
 handle actions from the UI, update internal state and call render function in
 JavaScript to apply display the new state in the UI.
+
+Pass "--headless" CLI option to the browser to run automated UI tests.
+
+## What's in a name?
+
+> There is kind of a legend, that before his execution Garcia Lorca have seen a
+> sunrise over the of the soldiers and he said "And yet, the run rises...".
+> Probably it was the beginning of a poem. (J. Brodsky)
+
+Lorca is an anagram of [Carlo](https://github.com/GoogleChromeLabs/carlo/), a
+project with a similar goal for Node.js.
 
 ## License
 
