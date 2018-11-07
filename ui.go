@@ -48,6 +48,9 @@ var defaultChromeArgs = []string{
 }
 
 func New(url string, dir string, width, height int, customArgs ...string) (UI, error) {
+	if url == "" {
+		url = "about:blank"
+	}
 	args := append(defaultChromeArgs, fmt.Sprintf("--app=%s", url))
 	args = append(args, fmt.Sprintf("--user-data-dir=%s", dir))
 	args = append(args, fmt.Sprintf("--window-size=%d,%d", width, height))

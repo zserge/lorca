@@ -7,7 +7,7 @@ import (
 )
 
 func TestEval(t *testing.T) {
-	ui, err := New("about:blank", "/tmp/chrome-test-dir", 480, 320, "--headless")
+	ui, err := New("", "/tmp/chrome-test-dir", 480, 320, "--headless")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,7 +32,7 @@ func TestEval(t *testing.T) {
 }
 
 func TestBind(t *testing.T) {
-	ui, err := New("about:blank", "/tmp/chrome-test-dir", 480, 320, "--headless")
+	ui, err := New("", "/tmp/chrome-test-dir", 480, 320, "--headless")
 	if err != nil {
 		t.Fatal(err)
 	}
