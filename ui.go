@@ -114,6 +114,7 @@ func (u *ui) Bind(name string, f interface{}) error {
 				return res[0].Interface(), nil
 			}
 		case 2:
+			// Two results: first one is value, second is error
 			if !res[1].Type().Implements(errorType) {
 				return nil, errors.New("second return value must be an error")
 			}
