@@ -345,7 +345,10 @@ func (c *chrome) kill() error {
 		}
 	}
 	// TODO: cancel all pending requests
-	return c.cmd.Process.Kill()
+	if state := c.cmd.ProcessState; state == nil || !state.Exited() {
+		return c.cmd.Process.Kill()
+	}
+	return nil
 }
 
 func readUntilMatch(r io.ReadCloser, re *regexp.Regexp) ([]string, error) {

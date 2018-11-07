@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"reflect"
 )
 
@@ -18,6 +20,7 @@ type UI interface {
 type ui struct {
 	chrome *chrome
 	done   chan struct{}
+	tmpDir string
 }
 
 var ChromeExecutable = func() string { return "chromium-browser" }
@@ -52,6 +55,14 @@ func New(url string, dir string, width, height int, customArgs ...string) (UI, e
 	if url == "" {
 		url = "data:text/html,<html></html>"
 	}
+	tmpDir := ""
+	if dir == "" {
+		if name, err := ioutil.TempDir("", "lorca"); err != nil {
+			return nil, err
+		} else {
+			dir, tmpDir = name, name
+		}
+	}
 	args := append(defaultChromeArgs, fmt.Sprintf("--app=%s", url))
 	args = append(args, fmt.Sprintf("--user-data-dir=%s", dir))
 	args = append(args, fmt.Sprintf("--window-size=%d,%d", width, height))
@@ -68,7 +79,7 @@ func New(url string, dir string, width, height int, customArgs ...string) (UI, e
 		chrome.cmd.Wait()
 		close(done)
 	}()
-	return &ui{chrome: chrome, done: done}, nil
+	return &ui{chrome: chrome, done: done, tmpDir: tmpDir}, nil
 }
 
 func (u *ui) Done() <-chan struct{} {
@@ -80,6 +91,11 @@ func (u *ui) Close() error {
 		return err
 	}
 	<-u.done
+	if u.tmpDir != "" {
+		if err := os.RemoveAll(u.tmpDir); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
