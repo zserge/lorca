@@ -30,6 +30,7 @@ var defaultChromeArgs = []string{
 	"--disable-client-side-phishing-detection",
 	"--disable-default-apps",
 	"--disable-dev-shm-usage",
+	"--disable-infobars",
 	"--disable-extensions",
 	"--disable-features=site-per-process",
 	"--disable-hang-monitor",
@@ -49,7 +50,7 @@ var defaultChromeArgs = []string{
 
 func New(url string, dir string, width, height int, customArgs ...string) (UI, error) {
 	if url == "" {
-		url = "about:blank"
+		url = "data:text/html,<html></html>"
 	}
 	args := append(defaultChromeArgs, fmt.Sprintf("--app=%s", url))
 	args = append(args, fmt.Sprintf("--user-data-dir=%s", dir))
