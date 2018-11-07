@@ -3,12 +3,15 @@ dist: trusty
 
 language: go
 
+addons:
+  apt:
+    sources:
+      - google-chrome
+    packages:
+      - google-chrome-stable
+
 go: 
   - 1.x
-
-install:
-  - sudo apt-get -qq update
-  - sudo apt-get -qq install -y chromium-browser
 
 env: GO111MODULE=on CGO_ENABLED=0
 
