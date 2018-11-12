@@ -6,6 +6,7 @@
 
 <div>
 <img align="left" src="https://raw.githubusercontent.com/zserge/lorca/master/lorca.png" alt="Lorca" width="128px" height="128px" />
+<br/>
 <p>
   A very small library to build modern HTML5 desktop apps in Go. It uses Chrome
   as a UI layer. It allows calling Go code from the UI and manipulating UI from
