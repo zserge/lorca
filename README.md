@@ -4,10 +4,17 @@
 [![GoDoc](https://godoc.org/github.com/zserge/lorca?status.svg)](https://godoc.org/github.com/zserge/lorca)
 [![Go Report Card](https://goreportcard.com/badge/github.com/zserge/lorca)](https://goreportcard.com/report/github.com/zserge/lorca)
 
-A very small library to build modern HTML5 desktop apps in Go. It uses Chrome
-as a UI layer. It allows calling Go code from the UI and manipulating UI from
-Go. Internally it implements Chrome Debug Protocol, so theoretically can also
-use other browsers that support it.
+<div>
+<img align="left" src="https://raw.githubusercontent.com/zserge/lorca/master/lorca.png" alt="Lorca" width="128px" height="128px" />
+<p>
+  A very small library to build modern HTML5 desktop apps in Go. It uses Chrome
+  as a UI layer. It allows calling Go code from the UI and manipulating UI from
+  Go. Internally it implements Chrome Debug Protocol, so theoretically can also
+  use other browsers that support it.
+</p>
+<br/>
+</div>
+
 
 ## Example
 
