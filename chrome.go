@@ -269,6 +269,9 @@ func (c *chrome) readLoop() {
 			} else {
 				resc <- result{Value: res.Result.Result.Value}
 			}
+		} else if m.Method == "Target.targetDestroyed" {
+			c.kill()
+			return
 		}
 	}
 }
