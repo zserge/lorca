@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Counter</title>
+		<style>
+		* { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+		body { height: 100vh; display: flex; align-items: center; justify-content: center; }
+		.counter-container { display: flex; flex-direction: column; align-items: center; }
+		.btn-row { display: flex; align-items: center; }
+		.btn { cursor: pointer; min-width: 4em; border: 1px solid black; text-align: center; margin: 0.5rem; }
+		</style>
+	</head>
+	<body onload=start()>
+		<!-- UI layout -->
+		<div class="counter-container">
+			<div class="counter"></div>
+			<div class="btn-row">
+				<div class="btn btn-incr">+1</div>
+				<div class="btn btn-decr">-1</div>
+			</div>
+		</div>
+
+		<!-- Connect UI actions to Go functions -->
+		<script>
+			const counter = document.querySelector('.counter');
+			const btnIncr = document.querySelector('.btn-incr');
+			const btnDecr = document.querySelector('.btn-decr');
+
+			// We use async/await because Go functions are asynchronous
+			const render = async () => {
+				counter.innerText = `Count: ${await window.counterValue()}`;
+			};
+
+			btnIncr.addEventListener('click', async () => {
+				await counterAdd(1); // Call Go function
+				render();
+			});
+
+			btnDecr.addEventListener('click', async () => {
+				await counterAdd(-1); // Call Go function
+				render();
+			});
+
+			render();
+		</script>
+	</body>
+</html>
