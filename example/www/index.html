@@ -5,10 +5,13 @@
 		<link rel="shortcut icon" href="favicon.png">
 		<style>
 		* { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
-		body { height: 100vh; display: flex; align-items: center; justify-content: center; }
+		body { height: 100vh; display: flex; align-items: center; justify-content: center; background-color: #f1c40f; font-family: 'Helvetika Neue', Arial, sans-serif; font-size: 28px; }
 		.counter-container { display: flex; flex-direction: column; align-items: center; }
-		.btn-row { display: flex; align-items: center; }
-		.btn { cursor: pointer; min-width: 4em; border: 1px solid black; text-align: center; margin: 0.5rem; }
+		.counter { text-transform: uppercase; color: #fff; font-weight: bold; font-size: 3rem; }
+		.btn-row { display: flex; align-items: center; margin: 1rem; }
+		.btn { cursor: pointer; min-width: 4em; padding: 1em; border-radius: 5px; text-align: center; margin: 0 1rem; box-shadow: 0 6px #8b5e00; color: white; background-color: #E4B702; position: relative; font-weight: bold; }
+		.btn:hover { box-shadow: 0 4px #8b5e00; top: 2px; }
+		.btn:active{ box-shadow: 0 1px #8b5e00; top: 5px; }
 		</style>
 	</head>
 	<body onload=start()>
