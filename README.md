@@ -39,7 +39,7 @@ m := ui.Eval(`add(2, 3)`).Int()
 
 ## So, it's a webview?
 
-I also maintain the [webview](https://github.com/zserge/webvoew) project.
+I also maintain the [webview](https://github.com/zserge/webview) project.
 Although Lorca solves a similar problem (modern GUI in Go), it solves the
 problem differently - it doesn't rely on native OS web engine, but instead
 requires a modern browser to be installed. For some use cases it's the
