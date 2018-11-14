@@ -89,6 +89,7 @@ func init() {
 			if err != nil {
 				return err
 			}
+			path = filepath.ToSlash(path)
 			fmt.Fprintf(w, `	assets[%q] = []byte{`, strings.TrimPrefix(path, dir))
 			for i := 0; i < len(b); i++ {
 				if i > 0 {
