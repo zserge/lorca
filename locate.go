@@ -1,12 +1,19 @@
 package lorca
 
-import "os"
+import (
+	"os"
+	"os/exec"
+	"runtime"
+	"strings"
+)
 
 // ChromeExecutable returns a string which points to the preferred Chrome
 // executable file.
-var ChromeExecutable = locateChrome
+var ChromeExecutable = LocateChrome
 
-func locateChrome() string {
+// LocateChrome returns a path to the Chrome binary, or an empty string if
+// Chrome installation is not found.
+func LocateChrome() string {
 	paths := []string{
 		"/usr/bin/google-chrome-stable",
 		"/usr/bin/google-chrome",
@@ -25,4 +32,28 @@ func locateChrome() string {
 		return path
 	}
 	return ""
+}
+
+// PromptDownload asks user if he wants to download and install Chrome, and
+// opens a download web page if the user agrees.
+func PromptDownload() {
+	title := "Chrome not found"
+	text := "No Chrome/Chromium installation was found. Would you like to download and install it now?"
+
+	// Ask user for confirmation
+	if !messageBox(title, text) {
+		return
+	}
+
+	// Open download page
+	url := "https://www.google.com/chrome/"
+	switch runtime.GOOS {
+	case "linux":
+		exec.Command("xdg-open", url).Run()
+	case "windows":
+		exec.Command("open", url).Run()
+	case "darwin":
+		r := strings.NewReplacer("&", "^&")
+		exec.Command("cmd", "/c", "start", r.Replace(url)).Run()
+	}
 }
