@@ -8,6 +8,9 @@ import (
 	"strings"
 )
 
+// Embed is a helper function that embeds assets from the given directories
+// into a Go source file. It is designed to be called from some generator
+// script, see example project to find out how it can be used.
 func Embed(file string, dirs ...string) error {
 	w, err := os.Create(file)
 	if err != nil {
