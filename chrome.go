@@ -40,6 +40,7 @@ type chrome struct {
 	cmd      *exec.Cmd
 	ws       *websocket.Conn
 	id       int32
+	target   string
 	session  string
 	pending  map[int]chan result
 	bindings map[string]bindingFunc
@@ -80,13 +81,13 @@ func newChromeWithArgs(chromeBinary string, args ...string) (*chrome, error) {
 	}
 
 	// Find target and initialize session
-	target, err := c.findTarget()
+	c.target, err = c.findTarget()
 	if err != nil {
 		c.kill()
 		return nil, err
 	}
 
-	c.session, err = c.startSession(target)
+	c.session, err = c.startSession(c.target)
 	if err != nil {
 		c.kill()
 		return nil, err
@@ -270,8 +271,14 @@ func (c *chrome) readLoop() {
 				resc <- result{Value: res.Result.Result.Value}
 			}
 		} else if m.Method == "Target.targetDestroyed" {
-			c.kill()
-			return
+			params := struct {
+				TargetID string `json:"targetId"`
+			}{}
+			json.Unmarshal(m.Params, &params)
+			if params.TargetID == c.target {
+				c.kill()
+				return
+			}
 		}
 	}
 }
