@@ -8,14 +8,43 @@
 <img align="left" src="https://raw.githubusercontent.com/zserge/lorca/master/lorca.png" alt="Lorca" width="128px" height="128px" />
 <br/>
 <p>
-  A very small library to build modern HTML5 desktop apps in Go. It uses Chrome
-  as a UI layer. It allows calling Go code from the UI and manipulating UI from
-  Go. Internally it implements Chrome Debug Protocol, so theoretically can also
-  use other browsers that support it.
+	A very small library to build modern HTML5 desktop apps in Go. It uses Chrome
+	browser as a UI layer. Unlike Electron it doesn't bundle Chrome into the app
+	package, but rather reuses the one that is already installed. Lorca
+	establishes a connection to the browser window and allows calling Go code
+	from the UI and manipulating UI from Go in a seamless manner.
 </p>
 <br/>
 </div>
 
+
+## Features
+
+* Pure Go library (no cgo) with a very simple API
+* Small application size (normally 5-10MB)
+* Best from the two worlds - the whole power of HTML/CSS to make your UI look
+	good, combined with Go performance and ease of development
+* Expose Go functions/methods and call them from JavaScript
+* Call arbitrary JavaScript code from Go
+* Asynchronous flow between UI and main app for both languages (async/await and Goroutines)
+* Supports loading web UI from the local web server or via data URL
+* Supports embedding all assets into a single binary
+* Supports testing your app with the UI in the headless mode
+* Supports multiple app windows
+* Supports packaging and branding (e.g. custom app icons). Packaging for all
+	three OS can be done on a single machine using GOOS and GOARCH variables.
+
+Also, limitations by design:
+
+* Requires Chrome/Chromium >= 70 to be installed.
+* No control over the Chrome window yet (e.g. you can't remove border, make it
+	transparent, control position or size).
+* No window menu (tray menus and native OS dialogs are still possible via
+	3rd-party libraries)
+
+If you want to have more control of the browser window - consider using
+[webview](https://github.com/zserge/webview) library with a similar API, so
+migration would be smooth.
 
 ## Example
 
@@ -37,31 +66,8 @@ m := ui.Eval(`add(2, 3)`).Int()
 <-ui.Done()
 ```
 
-## So, it's a webview?
-
-I also maintain the [webview](https://github.com/zserge/webview) project.
-Although Lorca solves a similar problem (modern GUI in Go), it solves the
-problem differently - it doesn't rely on native OS web engine, but instead
-requires a modern browser to be installed. For some use cases it's the
-preferred option.
-
-Also, I expect webview to remain small and simple, and what is more important,
-written in C. Lorca on the other hand should be implemented in pure Go and be
-as convenient as possible.
-
-## Good practices
-
-Embed your assets into a single Go binary. At the moment it's beyond the scope
-of this library, but might be simplified in future.
-
-I would recommend injecting HTML/JS/CSS using `Eval()` and data URIs. Although,
-a local web server would also solve the problem.
-
-I would recommend using an architecture similar to Redux, where Go code would
-handle actions from the UI, update internal state and call render function in
-JavaScript to apply display the new state in the UI.
-
-Pass "--headless" CLI option to the browser to run automated UI tests.
+Also, see an [example](example) for more details about embedding assets and
+packaging binaries.
 
 ## What's in a name?
 
