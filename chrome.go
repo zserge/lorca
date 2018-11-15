@@ -172,7 +172,7 @@ type targetMessage struct {
 		ID      int    `json:"executionContextId"`
 		Args    []struct {
 			Type  string      `json:"type"`
-			Value interface{} `json:'value"`
+			Value interface{} `json:"value"`
 		} `json:"args"`
 	} `json:"params"`
 	Error struct {
