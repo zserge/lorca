@@ -50,9 +50,9 @@ func PromptDownload() {
 	switch runtime.GOOS {
 	case "linux":
 		exec.Command("xdg-open", url).Run()
-	case "windows":
-		exec.Command("open", url).Run()
 	case "darwin":
+		exec.Command("open", url).Run()
+	case "windows":
 		r := strings.NewReplacer("&", "^&")
 		exec.Command("cmd", "/c", "start", r.Replace(url)).Run()
 	}
