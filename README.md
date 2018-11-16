@@ -72,7 +72,7 @@ packaging binaries.
 ## What's in a name?
 
 > There is kind of a legend, that before his execution Garcia Lorca have seen a
-> sunrise over the heads of the soldiers and he said "And yet, the run rises...".
+> sunrise over the heads of the soldiers and he said "And yet, the sun rises...".
 > Probably it was the beginning of a poem. (J. Brodsky)
 
 Lorca is an anagram of [Carlo](https://github.com/GoogleChromeLabs/carlo/), a
