@@ -15,8 +15,17 @@ type UI interface {
 	Load(url string) error
 	Bind(name string, f interface{}) error
 	Eval(js string) Value
-	Close() error
 	Done() <-chan struct{}
+	Window
+}
+
+// Window interface defines window related methods.
+type Window interface {
+	Close() error
+	Minimize() error
+	Maximize() error
+	Fullscreen() error
+	SetBounds(Bounds) error
 }
 
 type ui struct {
@@ -163,4 +172,20 @@ func (u *ui) Bind(name string, f interface{}) error {
 func (u *ui) Eval(js string) Value {
 	v, err := u.chrome.eval(js)
 	return value{err: err, raw: v}
+}
+
+func (u *ui) Minimize() error {
+	return u.chrome.minimize()
+}
+
+func (u *ui) Maximize() error {
+	return u.chrome.maximize()
+}
+
+func (u *ui) Fullscreen() error {
+	return u.chrome.fullscreen()
+}
+
+func (u *ui) SetBounds(b Bounds) error {
+	return u.chrome.setBounds(b)
 }

@@ -42,6 +42,7 @@ type chrome struct {
 	id       int32
 	target   string
 	session  string
+	window   int
 	pending  map[int]chan result
 	bindings map[string]bindingFunc
 }
@@ -108,6 +109,14 @@ func newChromeWithArgs(chromeBinary string, args ...string) (*chrome, error) {
 			return nil, err
 		}
 	}
+
+	win, err := c.getWindowForTarget(c.target)
+	if err != nil {
+		c.kill()
+		return nil, err
+	}
+	c.window = win.WindowID
+
 	return c, nil
 }
 
@@ -164,7 +173,31 @@ func (c *chrome) startSession(target string) (string, error) {
 	}
 }
 
-type targetMessage struct {
+// Bounds defines settable window properties.
+type Bounds struct {
+	Left        int    `json:"left"`
+	Top         int    `json:"top"`
+	Width       int    `json:"width"`
+	Height      int    `json:"height"`
+	WindowState string `json:"windowState"`
+}
+
+type windowTargetMessage struct {
+	WindowID int    `json:"windowId"`
+	Bounds   Bounds `json:"bounds"`
+}
+
+func (c *chrome) getWindowForTarget(target string) (windowTargetMessage, error) {
+	var m windowTargetMessage
+	msg, err := c.send("Browser.getWindowForTarget", h{"targetId": target})
+	if err != nil {
+		return m, err
+	}
+	err = json.Unmarshal(msg, &m)
+	return m, err
+}
+
+type targetMessageTemplate struct {
 	ID     int    `json:"id"`
 	Method string `json:"method"`
 	Params struct {
@@ -179,6 +212,11 @@ type targetMessage struct {
 	Error struct {
 		Message string `json:"message"`
 	} `json:"error"`
+	Result json.RawMessage `json:"result"`
+}
+
+type targetMessage struct {
+	targetMessageTemplate
 	Result struct {
 		Result struct {
 			Type        string          `json:"type"`
@@ -201,6 +239,7 @@ func (c *chrome) readLoop() {
 		if err := websocket.JSON.Receive(c.ws, &m); err != nil {
 			return
 		}
+
 		if m.Method == "Target.receivedMessageFromTarget" {
 			params := struct {
 				SessionID string `json:"sessionId"`
@@ -268,7 +307,9 @@ func (c *chrome) readLoop() {
 			} else if res.Result.Result.Type == "object" && res.Result.Result.Subtype == "error" {
 				resc <- result{Err: errors.New(res.Result.Result.Description)}
 			} else {
-				resc <- result{Value: res.Result.Result.Value}
+				res := targetMessageTemplate{}
+				json.Unmarshal([]byte(params.Message), &res)
+				resc <- result{Value: res.Result}
 			}
 		} else if m.Method == "Target.targetDestroyed" {
 			params := struct {
@@ -351,6 +392,34 @@ func (c *chrome) bind(name string, f bindingFunc) error {
 		return err
 	}
 	_, err = c.eval(script)
+	return err
+}
+
+func (c *chrome) minimize() error {
+	_, err := c.send("Browser.setWindowBounds", h{
+		"windowId": c.window, "bounds": h{"windowState": "minimized"},
+	})
+	return err
+}
+
+func (c *chrome) maximize() error {
+	_, err := c.send("Browser.setWindowBounds", h{
+		"windowId": c.window, "bounds": h{"windowState": "maximized"},
+	})
+	return err
+}
+
+func (c *chrome) fullscreen() error {
+	_, err := c.send("Browser.setWindowBounds", h{
+		"windowId": c.window, "bounds": h{"windowState": "fullscreen"},
+	})
+	return err
+}
+
+func (c *chrome) setBounds(b Bounds) error {
+	_, err := c.send("Browser.setWindowBounds", h{
+		"windowId": c.window, "bounds": b,
+	})
 	return err
 }
 
