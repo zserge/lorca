@@ -110,12 +110,14 @@ func newChromeWithArgs(chromeBinary string, args ...string) (*chrome, error) {
 		}
 	}
 
-	win, err := c.getWindowForTarget(c.target)
-	if err != nil {
-		c.kill()
-		return nil, err
+	if !contains(args, "--headless") {
+		win, err := c.getWindowForTarget(c.target)
+		if err != nil {
+			c.kill()
+			return nil, err
+		}
+		c.window = win.WindowID
 	}
-	c.window = win.WindowID
 
 	return c, nil
 }
@@ -306,6 +308,8 @@ func (c *chrome) readLoop() {
 				resc <- result{Err: errors.New(string(res.Result.Exception.Exception.Value))}
 			} else if res.Result.Result.Type == "object" && res.Result.Result.Subtype == "error" {
 				resc <- result{Err: errors.New(res.Result.Result.Description)}
+			} else if res.Result.Result.Type != "" {
+				resc <- result{Value: res.Result.Result.Value}
 			} else {
 				res := targetMessageTemplate{}
 				json.Unmarshal([]byte(params.Message), &res)
@@ -447,4 +451,13 @@ func readUntilMatch(r io.ReadCloser, re *regexp.Regexp) ([]string, error) {
 			return m, nil
 		}
 	}
+}
+
+func contains(arr []string, x string) bool {
+	for _, n := range arr {
+		if x == n {
+			return true
+		}
+	}
+	return false
 }
