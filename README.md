@@ -68,8 +68,8 @@ fmt.Println(m)
 <-ui.Done()
 ```
 
-Also, see an [example](example) for more details about embedding assets and
-packaging binaries.
+Also, see [examples](examples) for more details about binding functions, embedding
+assets and packaging binaries.
 
 ## What's in a name?
 
