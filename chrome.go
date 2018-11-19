@@ -180,9 +180,13 @@ func (c *chrome) startSession(target string) (string, error) {
 type WindowState string
 
 const (
-	WindowStateNormal     WindowState = "normal"
-	WindowStateMaximized  WindowState = "maximized"
-	WindowStateMinimized  WindowState = "minimized"
+	// WindowStateNormal defines a normal state of the browser window
+	WindowStateNormal WindowState = "normal"
+	// WindowStateMaximized defines a maximized state of the browser window
+	WindowStateMaximized WindowState = "maximized"
+	// WindowStateMinimized defines a minimized state of the browser window
+	WindowStateMinimized WindowState = "minimized"
+	// WindowStateFullscreen defines a fullscreen state of the browser window
 	WindowStateFullscreen WindowState = "fullscreen"
 )
 
