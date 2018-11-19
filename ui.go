@@ -13,19 +13,12 @@ import (
 // UI interface allows talking to the HTML5 UI from Go.
 type UI interface {
 	Load(url string) error
+	Bounds() (Bounds, error)
+	SetBounds(Bounds) error
 	Bind(name string, f interface{}) error
 	Eval(js string) Value
 	Done() <-chan struct{}
-	Window
-}
-
-// Window interface defines window related methods.
-type Window interface {
 	Close() error
-	Minimize() error
-	Maximize() error
-	Fullscreen() error
-	SetBounds(Bounds) error
 }
 
 type ui struct {
@@ -174,18 +167,10 @@ func (u *ui) Eval(js string) Value {
 	return value{err: err, raw: v}
 }
 
-func (u *ui) Minimize() error {
-	return u.chrome.minimize()
-}
-
-func (u *ui) Maximize() error {
-	return u.chrome.maximize()
-}
-
-func (u *ui) Fullscreen() error {
-	return u.chrome.fullscreen()
-}
-
 func (u *ui) SetBounds(b Bounds) error {
 	return u.chrome.setBounds(b)
+}
+
+func (u *ui) Bounds() (Bounds, error) {
+	return u.chrome.bounds()
 }

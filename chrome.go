@@ -175,13 +175,24 @@ func (c *chrome) startSession(target string) (string, error) {
 	}
 }
 
+// WindowState defines the state of the Chrome window, possible values are
+// "normal", "maximized", "minimized" and "fullscreen".
+type WindowState string
+
+const (
+	WindowStateNormal     WindowState = "normal"
+	WindowStateMaximized  WindowState = "maximized"
+	WindowStateMinimized  WindowState = "minimized"
+	WindowStateFullscreen WindowState = "fullscreen"
+)
+
 // Bounds defines settable window properties.
 type Bounds struct {
-	Left        int    `json:"left"`
-	Top         int    `json:"top"`
-	Width       int    `json:"width"`
-	Height      int    `json:"height"`
-	WindowState string `json:"windowState"`
+	Left        int         `json:"left"`
+	Top         int         `json:"top"`
+	Width       int         `json:"width"`
+	Height      int         `json:"height"`
+	WindowState WindowState `json:"windowState"`
 }
 
 type windowTargetMessage struct {
@@ -399,32 +410,28 @@ func (c *chrome) bind(name string, f bindingFunc) error {
 	return err
 }
 
-func (c *chrome) minimize() error {
-	_, err := c.send("Browser.setWindowBounds", h{
-		"windowId": c.window, "bounds": h{"windowState": "minimized"},
-	})
-	return err
-}
-
-func (c *chrome) maximize() error {
-	_, err := c.send("Browser.setWindowBounds", h{
-		"windowId": c.window, "bounds": h{"windowState": "maximized"},
-	})
-	return err
-}
-
-func (c *chrome) fullscreen() error {
-	_, err := c.send("Browser.setWindowBounds", h{
-		"windowId": c.window, "bounds": h{"windowState": "fullscreen"},
-	})
-	return err
-}
-
 func (c *chrome) setBounds(b Bounds) error {
-	_, err := c.send("Browser.setWindowBounds", h{
-		"windowId": c.window, "bounds": b,
-	})
+	if b.WindowState == "" {
+		b.WindowState = WindowStateNormal
+	}
+	param := h{"windowId": c.window, "bounds": b}
+	if b.WindowState != WindowStateNormal {
+		param["bounds"] = h{"windowState": b.WindowState}
+	}
+	_, err := c.send("Browser.setWindowBounds", param)
 	return err
+}
+
+func (c *chrome) bounds() (Bounds, error) {
+	result, err := c.send("Browser.getWindowBounds", h{"windowId": c.window})
+	if err != nil {
+		return Bounds{}, err
+	}
+	bounds := struct {
+		Bounds Bounds `json:"bounds"`
+	}{}
+	err = json.Unmarshal(result, &bounds)
+	return bounds.Bounds, err
 }
 
 func (c *chrome) kill() error {
