@@ -71,6 +71,8 @@ fmt.Println(m)
 Also, see [examples](examples) for more details about binding functions, embedding
 assets and packaging binaries.
 
+<p align="center"><img src="examples/counter/counter.gif" /></p>
+
 ## What's in a name?
 
 > There is kind of a legend, that before his execution Garcia Lorca have seen a
