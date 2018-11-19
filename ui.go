@@ -56,7 +56,7 @@ var defaultChromeArgs = []string{
 // New returns a new HTML5 UI for the given URL, user profile directory, window
 // size and other options passed to the browser engine. If URL is an empty
 // string - a blank page is displayed. If user profile directory is an empty
-// string - a temporary direction is created and it will be removed on
+// string - a temporary directory is created and it will be removed on
 // ui.Close(). You might want to use "--headless" custom CLI argument to test
 // your UI code.
 func New(url string, dir string, width, height int, customArgs ...string) (UI, error) {
