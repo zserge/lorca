@@ -19,5 +19,7 @@ install:
   - go mod download
 
 script:
-  - go build -o example-app ./example
+  - go build -o example-hello ./examples/hello
+  - go build -o example-stopwatch ./examples/stopwatch
+  - go build -o example-counter ./examples/counter
   - go test -v ./...
