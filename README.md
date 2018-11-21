@@ -73,6 +73,10 @@ assets and packaging binaries.
 
 <p align="center"><img src="examples/counter/counter.gif" /></p>
 
+## How it work
+
+Under the hood Lorca uses `Chrome DevTools Protocol` to instrument on a Chrome instance. First Lorca tries to locate your installed Chrome, starts a remote debugging instance binding to an ephemeral port and reads from `stderr` for the actual WebSocket endpoint. Then Lorca will open a new client connection to the WebSocket server, and instruments Chrome by sending JSON messages of `Chrome DevTools Protocol` methods via WebSocket. JavaScript functions are evaluated in Chrome, while Go functions actually run in Go runtime and returns would be sent to Chrome. See more on `Chrome DevTools Protocol` in [here](https://chromedevtools.github.io/devtools-protocol/).
+
 ## What's in a name?
 
 > There is kind of a legend, that before his execution Garcia Lorca have seen a
