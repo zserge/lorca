@@ -163,7 +163,10 @@ func (u *ui) Bind(name string, f interface{}) error {
 }
 
 func (u *ui) Eval(js string) Value {
-	u.chrome.send("Page.addScriptToEvaluateOnNewDocument", h{"source": js})
+	_, err := u.chrome.send("Page.addScriptToEvaluateOnNewDocument", h{"source": js})
+	if err != nil {
+		return value{err: err, raw: nil}
+	}
 	v, err := u.chrome.eval(js)
 	return value{err: err, raw: v}
 }
