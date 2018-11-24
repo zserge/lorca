@@ -59,7 +59,7 @@ var defaultChromeArgs = []string{
 // string - a temporary directory is created and it will be removed on
 // ui.Close(). You might want to use "--headless" custom CLI argument to test
 // your UI code.
-func New(url string, dir string, width, height int, customArgs ...string) (UI, error) {
+func New(url, dir string, width, height int, customArgs ...string) (UI, error) {
 	if url == "" {
 		url = "data:text/html,<html></html>"
 	}
