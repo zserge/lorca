@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
-	"runtime"
 )
 
 // UI interface allows talking to the HTML5 UI from Go.
@@ -76,9 +75,6 @@ func New(url string, dir string, width, height int, customArgs ...string) (UI, e
 	args = append(args, fmt.Sprintf("--window-size=%d,%d", width, height))
 	args = append(args, customArgs...)
 	args = append(args, "--remote-debugging-port=0")
-	if runtime.GOOS == "linux" {
-		args = append(args, "--class=Lorca")
-	}
 
 	chrome, err := newChromeWithArgs(ChromeExecutable(), args...)
 	done := make(chan struct{})

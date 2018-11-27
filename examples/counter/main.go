@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
 	"sync"
 
 	"github.com/zserge/lorca"
@@ -35,7 +36,11 @@ func (c *counter) Value() int {
 }
 
 func main() {
-	ui, err := lorca.New("", "", 480, 320)
+	args := []string{}
+	if runtime.GOOS == "linux" {
+		args = append(args, "--class=Lorca")
+	}
+	ui, err := lorca.New("", "", 480, 320, args...)
 	if err != nil {
 		log.Fatal(err)
 	}
