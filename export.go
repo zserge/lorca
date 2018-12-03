@@ -20,7 +20,9 @@ const (
 // you may use PageA4Width and PageA4Height constants.
 func PDF(url, script string, width, height int) ([]byte, error) {
 	return doHeadless(url, func(c *chrome) ([]byte, error) {
-		c.eval(script)
+		if _, err := c.eval(script); err != nil {
+			return nil, err
+		}
 		return c.pdf(width, height)
 	})
 }
@@ -35,7 +37,9 @@ func PDF(url, script string, width, height int) ([]byte, error) {
 // for example when preparing Lorca app icons.
 func PNG(url, script string, x, y, width, height int, bg uint32, scale float32) ([]byte, error) {
 	return doHeadless(url, func(c *chrome) ([]byte, error) {
-		c.eval(script)
+		if _, err := c.eval(script); err != nil {
+			return nil, err
+		}
 		return c.png(x, y, width, height, bg, scale)
 	})
 }
