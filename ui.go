@@ -74,11 +74,11 @@ func New(url, dir string, width, height int, customArgs ...string) (UI, error) {
 	args := append(defaultChromeArgs, fmt.Sprintf("--app=%s", url))
 	args = append(args, fmt.Sprintf("--user-data-dir=%s", dir))
 	args = append(args, fmt.Sprintf("--window-size=%d,%d", width, height))
-	args = append(args, customArgs...)
 	args = append(args, "--remote-debugging-port=0")
 	if runtime.GOOS == "linux" {
 		args = append(args, "--class=Lorca")
 	}
+	args = append(args, customArgs...)
 
 	chrome, err := newChromeWithArgs(ChromeExecutable(), args...)
 	done := make(chan struct{})
