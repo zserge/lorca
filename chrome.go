@@ -438,6 +438,61 @@ func (c *chrome) bounds() (Bounds, error) {
 	return bounds.Bounds, err
 }
 
+func (c *chrome) pdf(width, height int) ([]byte, error) {
+	result, err := c.send("Page.printToPDF", h{
+		"paperWidth":  float32(width) / 96,
+		"paperHeight": float32(height) / 96,
+	})
+	if err != nil {
+		return nil, err
+	}
+	pdf := struct {
+		Data []byte `json:"data"`
+	}{}
+	err = json.Unmarshal(result, &pdf)
+	return pdf.Data, err
+}
+
+func (c *chrome) png(x, y, width, height int, bg uint32, scale float32) ([]byte, error) {
+	if x == 0 && y == 0 && width == 0 && height == 0 {
+		// By default either use SVG size if it's an SVG, or use A4 page size
+		bounds, err := c.eval(`document.rootElement ? [document.rootElement.x.baseVal.value, document.rootElement.y.baseVal.value, document.rootElement.width.baseVal.value, document.rootElement.height.baseVal.value] : [0,0,816,1056]`)
+		if err != nil {
+			return nil, err
+		}
+		rect := make([]int, 4)
+		if err := json.Unmarshal(bounds, &rect); err != nil {
+			return nil, err
+		}
+		x, y, width, height = rect[0], rect[1], rect[2], rect[3]
+	}
+
+	_, err := c.send("Emulation.setDefaultBackgroundColorOverride", h{
+		"color": h{
+			"r": (bg >> 16) & 0xff,
+			"g": (bg >> 8) & 0xff,
+			"b": bg & 0xff,
+			"a": (bg >> 24) & 0xff,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	result, err := c.send("Page.captureScreenshot", h{
+		"clip": h{
+			"x": x, "y": y, "width": width, "height": height, "scale": scale,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	pdf := struct {
+		Data []byte `json:"data"`
+	}{}
+	err = json.Unmarshal(result, &pdf)
+	return pdf.Data, err
+}
+
 func (c *chrome) kill() error {
 	if c.ws != nil {
 		if err := c.ws.Close(); err != nil {
