@@ -24,6 +24,7 @@ func LocateChrome() string {
 		"/Applications/Chromium.app/Contents/MacOS/Chromium",
 		"C:/Users/" + os.Getenv("USERNAME") + "/AppData/Local/Google/Chrome/Application/chrome.exe",
 		"C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
+		"C:/Program Files/Google/Chrome/Application/chrome.exe",
 	}
 
 	for _, path := range paths {
