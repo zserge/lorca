@@ -14,17 +14,31 @@ var ChromeExecutable = LocateChrome
 // LocateChrome returns a path to the Chrome binary, or an empty string if
 // Chrome installation is not found.
 func LocateChrome() string {
-	paths := []string{
-		"/usr/bin/google-chrome-stable",
-		"/usr/bin/google-chrome",
-		"/usr/bin/chromium",
-		"/usr/bin/chromium-browser",
-		"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-		"/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
-		"/Applications/Chromium.app/Contents/MacOS/Chromium",
-		"C:/Users/" + os.Getenv("USERNAME") + "/AppData/Local/Google/Chrome/Application/chrome.exe",
-		"C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
-		"C:/Program Files/Google/Chrome/Application/chrome.exe",
+	var paths []string
+	switch runtime.GOOS {
+	case "darwin":
+		paths = []string{
+			"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+			"/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
+			"/Applications/Chromium.app/Contents/MacOS/Chromium",
+			"/usr/bin/google-chrome-stable",
+			"/usr/bin/google-chrome",
+			"/usr/bin/chromium",
+			"/usr/bin/chromium-browser",
+		}
+	case "windows":
+		paths = []string{
+			"C:/Users/" + os.Getenv("USERNAME") + "/AppData/Local/Google/Chrome/Application/chrome.exe",
+			"C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
+			"C:/Program Files/Google/Chrome/Application/chrome.exe",
+		}
+	default:
+		paths = []string{
+			"/usr/bin/google-chrome-stable",
+			"/usr/bin/google-chrome",
+			"/usr/bin/chromium",
+			"/usr/bin/chromium-browser",
+		}
 	}
 
 	for _, path := range paths {
