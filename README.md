@@ -22,11 +22,11 @@
 
 * Pure Go library (no cgo) with a very simple API
 * Small application size (normally 5-10MB)
-* Best from the two worlds - the whole power of HTML/CSS to make your UI look
+* Best of both worlds - the whole power of HTML/CSS to make your UI look
 	good, combined with Go performance and ease of development
 * Expose Go functions/methods and call them from JavaScript
 * Call arbitrary JavaScript code from Go
-* Asynchronous flow between UI and main app for both languages (async/await and Goroutines)
+* Asynchronous flow between UI and main app in both languages (async/await and Goroutines)
 * Supports loading web UI from the local web server or via data URL
 * Supports embedding all assets into a single binary
 * Supports testing your app with the UI in the headless mode
