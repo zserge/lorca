@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/url"
 	"sync/atomic"
 	"time"
@@ -10,7 +11,10 @@ import (
 )
 
 func main() {
-	ui, _ := lorca.New("", "", 480, 320)
+	ui, err := lorca.New("", "", 480, 320)
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer ui.Close()
 
 	// Data model: number of ticks
