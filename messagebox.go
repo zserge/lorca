@@ -20,7 +20,7 @@ func messageBox(title, text string) bool {
 		}
 	} else if runtime.GOOS == "darwin" {
 		script := `set T to button returned of ` +
-			`(display dialog "%s" with title "%s" buttons {"No", "Yes"} default button Yes")`
+			`(display dialog "%s" with title "%s" buttons {"No", "Yes"} default button "Yes")`
 		out, err := exec.Command("osascript", "-e", fmt.Sprintf(script, text, title)).Output()
 		if err != nil {
 			if exitError, ok := err.(*exec.ExitError); ok {
