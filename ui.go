@@ -94,9 +94,8 @@ func (u *ui) Done() <-chan struct{} {
 }
 
 func (u *ui) Close() error {
-	if err := u.chrome.kill(); err != nil {
-		return err
-	}
+	// ignore err, as the chrome process might be already dead, when user close the window.
+	u.chrome.kill()
 	<-u.done
 	if u.tmpDir != "" {
 		if err := os.RemoveAll(u.tmpDir); err != nil {
