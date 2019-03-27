@@ -66,7 +66,7 @@ func newChromeWithArgs(chromeBinary string, args ...string) (*chrome, error) {
 	}
 
 	// Wait for websocket address to be printed to stderr
-	re := regexp.MustCompile(`^DevTools listening on (ws://.*)\n$`)
+	re := regexp.MustCompile(`^DevTools listening on (ws://.*?)\r?\n$`)
 	m, err := readUntilMatch(pipe, re)
 	if err != nil {
 		c.kill()
