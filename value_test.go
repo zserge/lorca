@@ -26,19 +26,11 @@ func TestValuePrimitive(t *testing.T) {
 		t.Fail()
 	}
 	v = value{raw: json.RawMessage(`"hello"`)}
-	if v.Int() != 0 {
+	if v.Int() != 0 || v.String() != "hello" {
 		t.Fail()
 	}
 	v = value{err: errTest}
-	if v.Int() != 0 {
-		t.Fail()
-	}
-	v = value{raw: json.RawMessage(`"hello"`)}
-	if v.String() != "hello" {
-		t.Fail()
-	}
-	v = value{err: errTest}
-	if v.String() != "" {
+	if v.Int() != 0 || v.String() != "" {
 		t.Fail()
 	}
 }
