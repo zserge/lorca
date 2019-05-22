@@ -139,7 +139,10 @@ func (u *ui) Bind(name string, f interface{}) error {
 		case 1:
 			// One result may be a value, or an error
 			if res[0].Type().Implements(errorType) {
-				return nil, res[0].Interface().(error)
+				if res[0].Interface() != nil {
+					return nil, res[0].Interface().(error)
+				}
+				return nil, nil
 			}
 			return res[0].Interface(), nil
 		case 2:
