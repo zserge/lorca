@@ -1,6 +1,7 @@
 package lorca
 
 import (
+	"errors"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -83,5 +84,69 @@ func TestBind(t *testing.T) {
 	}
 	if n := ui.Eval(`atoi('hello')`); n.Err() == nil {
 		t.Fatal(n)
+	}
+}
+
+func TestFunctionReturnTypes(t *testing.T) {
+	ui, err := New("", "", 480, 320, "--headless")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ui.Close()
+
+	if err := ui.Bind("noResults", func() { return }); err != nil {
+		t.Fatal(err)
+	}
+	if err := ui.Bind("oneNonNilResult", func() interface{} { return 1 }); err != nil {
+		t.Fatal(err)
+	}
+	if err := ui.Bind("oneNilResult", func() interface{} { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	if err := ui.Bind("oneNonNilErrorResult", func() error { return errors.New("error") }); err != nil {
+		t.Fatal(err)
+	}
+	if err := ui.Bind("oneNilErrorResult", func() error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	if err := ui.Bind("twoResultsNonNilError", func() (interface{}, error) { return nil, errors.New("error") }); err != nil {
+		t.Fatal(err)
+	}
+	if err := ui.Bind("twoResultsNilError", func() (interface{}, error) { return 1, nil }); err != nil {
+		t.Fatal(err)
+	}
+	if err := ui.Bind("twoResultsBothNonNil", func() (interface{}, error) { return 1, errors.New("error") }); err != nil {
+		t.Fatal(err)
+	}
+	if err := ui.Bind("twoResultsBothNil", func() (interface{}, error) { return nil, nil }); err != nil {
+		t.Fatal(err)
+	}
+
+	if v := ui.Eval(`noResults()`); v.Err() != nil {
+		t.Fatal(v)
+	}
+	if v := ui.Eval(`oneNonNilResult()`); v.Int() != 1 {
+		t.Fatal(v)
+	}
+	if v := ui.Eval(`oneNilResult()`); v.Err() != nil {
+		t.Fatal(v)
+	}
+	if v := ui.Eval(`oneNonNilErrorResult()`); v.Err() == nil {
+		t.Fatal(v)
+	}
+	if v := ui.Eval(`oneNilErrorResult()`); v.Err() != nil {
+		t.Fatal(v)
+	}
+	if v := ui.Eval(`twoResultsNonNilError()`); v.Err() == nil {
+		t.Fatal(v)
+	}
+	if v := ui.Eval(`twoResultsNilError()`); v.Err() != nil || v.Int() != 1 {
+		t.Fatal(v)
+	}
+	if v := ui.Eval(`twoResultsBothNonNil()`); v.Err() == nil {
+		t.Fatal(v)
+	}
+	if v := ui.Eval(`twoResultsBothNil()`); v.Err() != nil {
+		t.Fatal(v)
 	}
 }
