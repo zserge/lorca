@@ -376,8 +376,18 @@ func (c *chrome) eval(expr string) (json.RawMessage, error) {
 
 func (c *chrome) bind(name string, f bindingFunc) error {
 	c.Lock()
+	// check if binding already exists
+	_, exists := c.bindings[name]
+
 	c.bindings[name] = f
 	c.Unlock()
+
+	if exists {
+		// Just replace callback and return, as the binding was already added to js
+		// and adding it again would break it.
+		return nil
+	}
+
 	if _, err := c.send("Runtime.addBinding", h{"name": name}); err != nil {
 		return err
 	}
