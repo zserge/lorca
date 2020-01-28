@@ -28,10 +28,12 @@ func LocateChrome() string {
 		}
 	case "windows":
 		paths = []string{
-			"C:/Users/" + os.Getenv("USERNAME") + "/AppData/Local/Google/Chrome/Application/chrome.exe",
-			"C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
-			"C:/Program Files/Google/Chrome/Application/chrome.exe",
-			"C:/Users/" + os.Getenv("USERNAME") + "/AppData/Local/Chromium/Application/chrome.exe",
+			os.Getenv("LocalAppData") + "/Google/Chrome/Application/chrome.exe",
+			os.Getenv("ProgramFiles") + "/Google/Chrome/Application/chrome.exe",
+			os.Getenv("ProgramFiles(x86)") + "/Google/Chrome/Application/chrome.exe",
+			os.Getenv("LocalAppData") + "/Chromium/Application/chrome.exe",
+			os.Getenv("ProgramFiles") + "/Chromium/Application/chrome.exe",
+			os.Getenv("ProgramFiles(x86)") + "/Chromium/Application/chrome.exe",
 		}
 	default:
 		paths = []string{
