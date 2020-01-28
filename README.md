@@ -68,10 +68,20 @@ fmt.Println(m)
 <-ui.Done()
 ```
 
+<p align="center"><img src="examples/counter/counter.gif" /></p>
+
 Also, see [examples](examples) for more details about binding functions, embedding
 assets and packaging binaries.
 
-<p align="center"><img src="examples/counter/counter.gif" /></p>
+## Hello World
+
+Here are the steps to run the hello world example.
+
+```
+cd examples/counter
+go get
+go run main.go
+```
 
 ## How it works
 
