@@ -46,6 +46,7 @@ var defaultChromeArgs = []string{
 	"--disable-translate",
 	"--metrics-recording-only",
 	"--no-first-run",
+	"--no-default-browser-check",
 	"--safebrowsing-disable-auto-update",
 	"--enable-automation",
 	"--password-store=basic",
