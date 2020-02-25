@@ -15,8 +15,6 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
       - name: Run tests
-        env:
-          CGO_ENABLED: 0
         run: go test -v -race ./...
       - name: Build examples
         env:
