@@ -44,6 +44,7 @@ var defaultChromeArgs = []string{
 	"--disable-renderer-backgrounding",
 	"--disable-sync",
 	"--disable-translate",
+	"--disable-windows10-custom-titlebar",
 	"--metrics-recording-only",
 	"--no-first-run",
 	"--no-default-browser-check",
