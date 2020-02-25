@@ -1,6 +1,6 @@
 # Lorca
 
-[![Build Status](https://travis-ci.org/zserge/lorca.svg?branch=master)](https://travis-ci.org/zserge/lorca)
+[![Build Status](https://img.shields.io/github/workflow/status/zserge/lorca/CI%20Pipeline)](https://github.com/zserge/lorca)
 [![GoDoc](https://godoc.org/github.com/zserge/lorca?status.svg)](https://godoc.org/github.com/zserge/lorca)
 [![Go Report Card](https://goreportcard.com/badge/github.com/zserge/lorca)](https://goreportcard.com/report/github.com/zserge/lorca)
 
