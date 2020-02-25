@@ -1,0 +1,27 @@
+name: CI Pipeline
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install Chrome
+        run: |
+          sudo apt-get update
+          sudo apt-get install -yqq google-chrome-stable
+      - name: Install Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Run tests
+        env:
+          CGO_ENABLED: 0
+        run: go test -v -race ./...
+      - name: Build examples
+        env:
+          CGO_ENABLED: 0
+        run: |
+          go build -o example-hello ./examples/hello
+          go build -o example-stopwatch ./examples/stopwatch
+          go build -o example-counter ./examples/counter
