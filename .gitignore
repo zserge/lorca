@@ -11,3 +11,11 @@ example/Example.app
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+
+## JetBrains Idea and Goland
+/.idea/**/*.*
+/.idea/\$CACHE_FILE\$
+/.idea/dataSources/
+!/.idea/inspectionProfiles/Project_Default.xml
+!/.idea/dictionaries/*.xml
+!/.idea/go.xml
