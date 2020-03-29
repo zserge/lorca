@@ -133,7 +133,6 @@ func NewChromium(url, dir string, width, height int, customArgs ...string) (UI, 
 	args = append(args, fmt.Sprintf("--user-data-dir=%s", dir))
 	args = append(args, fmt.Sprintf("--window-size=%d,%d", width, height))
 	args = append(args, customArgs...)
-    args = append(args, url)
 
 	chrome, err := newChromeWithArgs(ChromeExecutable(), args...)
 	done := make(chan struct{})
