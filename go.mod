@@ -1,4 +1,4 @@
-module github.com/eyedeekay/lorca
+module github.com/zserge/lorca
 
 go 1.13
 
