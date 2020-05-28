@@ -65,7 +65,7 @@ func main() {
 		log.Fatal(err)
 	}
 	defer ln.Close()
-	go http.Serve(ln, http.FileServer(FS))
+	go http.Serve(ln, http.FileServer(http.Dir("./www")))
 	ui.Load(fmt.Sprintf("http://%s", ln.Addr()))
 
 	// You may use console.log to debug your JS code, it will be printed via
