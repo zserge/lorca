@@ -1,15 +1,14 @@
 package lorca
 
 import (
-	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
+	"net"
+	"net/http"
 	"os/exec"
-	"regexp"
 	"sync"
 	"sync/atomic"
 
@@ -47,6 +46,24 @@ type chrome struct {
 	bindings map[string]bindingFunc
 }
 
+type browserVersion struct {
+	Browser string `json:"Browser"`
+	ProtocolVersion string `json:"Protocol-Version"`
+	UserAgent string `json:"User-Agent"`
+	V8Version string `json:"V8-Version"`
+	WebkitVersion string `json:"Webkit-Version"`
+	WebSocketDebuggerUrl string `json:"webSocketDebuggerUrl"`
+}
+
+func getFreePort() (int, error) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return 0, err
+	}
+	defer ln.Close()
+	return ln.Addr().(*net.TCPAddr).Port, nil
+}
+
 func newChromeWithArgs(chromeBinary string, args ...string) (*chrome, error) {
 	// The first two IDs are used internally during the initialization
 	c := &chrome{
@@ -55,24 +72,40 @@ func newChromeWithArgs(chromeBinary string, args ...string) (*chrome, error) {
 		bindings: map[string]bindingFunc{},
 	}
 
-	// Start chrome process
-	c.cmd = exec.Command(chromeBinary, args...)
-	pipe, err := c.cmd.StderrPipe()
+	debugPort, err := getFreePort()
 	if err != nil {
 		return nil, err
 	}
+
+	// Start chrome process
+	args = append(args, fmt.Sprintf("--remote-debugging-port=%d", debugPort))
+	c.cmd = exec.Command(chromeBinary, args...)
 	if err := c.cmd.Start(); err != nil {
 		return nil, err
 	}
 
-	// Wait for websocket address to be printed to stderr
-	re := regexp.MustCompile(`^DevTools listening on (ws://.*?)\r?\n$`)
-	m, err := readUntilMatch(pipe, re)
-	if err != nil {
-		c.kill()
+	if err := c.cmd.Wait(); err != nil {
 		return nil, err
 	}
-	wsURL := m[1]
+
+	res, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/json/version", debugPort))
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	browserVer := &browserVersion{}
+
+	err = json.Unmarshal(body, &browserVer)
+	if err != nil {
+		return nil, err
+	}
+
+	wsURL := browserVer.WebSocketDebuggerUrl
 
 	// Open a websocket
 	c.ws, err = websocket.Dial(wsURL, "", "http://127.0.0.1")
@@ -514,19 +547,6 @@ func (c *chrome) kill() error {
 		return c.cmd.Process.Kill()
 	}
 	return nil
-}
-
-func readUntilMatch(r io.ReadCloser, re *regexp.Regexp) ([]string, error) {
-	br := bufio.NewReader(r)
-	for {
-		if line, err := br.ReadString('\n'); err != nil {
-			r.Close()
-			return nil, err
-		} else if m := re.FindStringSubmatch(line); m != nil {
-			go io.Copy(ioutil.Discard, br)
-			return m, nil
-		}
-	}
 }
 
 func contains(arr []string, x string) bool {
