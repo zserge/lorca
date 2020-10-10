@@ -15,12 +15,18 @@ type Value interface {
 	Array() []Value
 }
 
+// RawValue is a raw JSON value.
+type RawValue interface {
+	Bytes() []byte
+}
+
 type value struct {
 	err error
 	raw json.RawMessage
 }
 
 func (v value) Err() error             { return v.err }
+func (v value) Bytes() []byte          { return v.raw }
 func (v value) To(x interface{}) error { return json.Unmarshal(v.raw, x) }
 func (v value) Float() (f float32)     { v.To(&f); return f }
 func (v value) Int() (i int)           { v.To(&i); return i }

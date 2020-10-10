@@ -3,6 +3,7 @@ package lorca
 import (
 	"encoding/json"
 	"errors"
+	"reflect"
 	"testing"
 )
 
@@ -47,6 +48,28 @@ func TestValueComplex(t *testing.T) {
 		t.Fail()
 	}
 	if v.Array()[2].Object()["x"].Int() != 5 {
+		t.Fail()
+	}
+}
+
+func TestRawValue(t *testing.T) {
+	var v Value
+
+	v = value{raw: json.RawMessage(nil)}
+	r, ok := v.(RawValue)
+	if !ok {
+		t.Fail()
+	}
+	if r.Bytes() != nil {
+		t.Fail()
+	}
+
+	v = value{raw: json.RawMessage(`"hello"`)}
+	r, ok = v.(RawValue)
+	if !ok {
+		t.Fail()
+	}
+	if !reflect.DeepEqual(r.Bytes(), []byte(`"hello"`)) {
 		t.Fail()
 	}
 }
