@@ -80,7 +80,7 @@ Here are the steps to run the hello world example.
 ```
 cd examples/counter
 go get
-go run main.go
+go run ./
 ```
 
 ## How it works
