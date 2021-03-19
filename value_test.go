@@ -1,9 +1,9 @@
 package lorca
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
-	"reflect"
 	"testing"
 )
 
@@ -61,7 +61,7 @@ func TestRawValue(t *testing.T) {
 	}
 
 	v = value{raw: json.RawMessage(`"hello"`)}
-	if !reflect.DeepEqual(v.Bytes(), []byte(`"hello"`)) {
+	if !bytes.Equal(v.Bytes(), []byte(`"hello"`)) {
 		t.Fail()
 	}
 }
