@@ -13,10 +13,6 @@ type Value interface {
 	Bool() bool
 	Object() map[string]Value
 	Array() []Value
-}
-
-// RawValue is a raw JSON value.
-type RawValue interface {
 	Bytes() []byte
 }
 

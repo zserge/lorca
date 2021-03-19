@@ -56,20 +56,12 @@ func TestRawValue(t *testing.T) {
 	var v Value
 
 	v = value{raw: json.RawMessage(nil)}
-	r, ok := v.(RawValue)
-	if !ok {
-		t.Fail()
-	}
-	if r.Bytes() != nil {
+	if v.Bytes() != nil {
 		t.Fail()
 	}
 
 	v = value{raw: json.RawMessage(`"hello"`)}
-	r, ok = v.(RawValue)
-	if !ok {
-		t.Fail()
-	}
-	if !reflect.DeepEqual(r.Bytes(), []byte(`"hello"`)) {
+	if !reflect.DeepEqual(v.Bytes(), []byte(`"hello"`)) {
 		t.Fail()
 	}
 }
