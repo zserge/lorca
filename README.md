@@ -28,7 +28,6 @@
 * Call arbitrary JavaScript code from Go
 * Asynchronous flow between UI and main app in both languages (async/await and Goroutines)
 * Supports loading web UI from the local web server or via data URL
-* Supports embedding all assets into a single binary
 * Supports testing your app with the UI in the headless mode
 * Supports multiple app windows
 * Supports packaging and branding (e.g. custom app icons). Packaging for all
@@ -70,8 +69,7 @@ fmt.Println(m)
 
 <p align="center"><img src="examples/counter/counter.gif" /></p>
 
-Also, see [examples](examples) for more details about binding functions, embedding
-assets and packaging binaries.
+Also, see [examples](examples) for more details about binding functions and packaging binaries.
 
 ## Hello World
 

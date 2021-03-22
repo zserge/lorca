@@ -11,9 +11,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -yqq google-chrome-stable
       - name: Install Go
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v2
         with:
-          go-version: ${{ matrix.go-version }}
+          go-version: '1.16'
       - name: Run tests
         run: go test -v -race ./...
       - name: Build examples
