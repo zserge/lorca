@@ -29,6 +29,7 @@ func LocateChrome() string {
 			"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
 			"/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
 			"/Applications/Chromium.app/Contents/MacOS/Chromium",
+			"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
 			"/usr/bin/google-chrome-stable",
 			"/usr/bin/google-chrome",
 			"/usr/bin/chromium",
