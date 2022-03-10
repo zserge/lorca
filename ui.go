@@ -127,6 +127,9 @@ func NewAsUser(url, dir, user string, width, height int, customArgs ...string) (
 	return &ui{chrome: chrome, done: done, tmpDir: tmpDir}, nil
 }
 
+// NewChromium is like NewAsUser, except it omitts the --app flag by default effectively
+// making it a Chromium "Profile Wrapper" which can be used to launch Chromium with custom
+// args, programattically, in Go.
 func NewChromium(url, dir string, width, height int, customArgs ...string) (UI, error) {
 	if url == "" {
 		url = "data:text/html,<html></html>"
@@ -143,7 +146,7 @@ func NewChromium(url, dir string, width, height int, customArgs ...string) (UI, 
 	args = append(args, fmt.Sprintf("--user-data-dir=%s", dir))
 	args = append(args, fmt.Sprintf("--window-size=%d,%d", width, height))
 	args = append(args, customArgs...)
-    //args = append(args, "--remote-debugging-port=0")
+	//args = append(args, "--remote-debugging-port=0")
 
 	chrome, err := newChromeWithArgs(ChromeExecutable(), args...)
 	done := make(chan struct{})
