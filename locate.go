@@ -29,6 +29,7 @@ func LocateChrome() string {
 			"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
 			"/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
 			"/Applications/Chromium.app/Contents/MacOS/Chromium",
+			"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
 			"/usr/bin/google-chrome-stable",
 			"/usr/bin/google-chrome",
 			"/usr/bin/chromium",
@@ -42,6 +43,8 @@ func LocateChrome() string {
 			os.Getenv("LocalAppData") + "/Chromium/Application/chrome.exe",
 			os.Getenv("ProgramFiles") + "/Chromium/Application/chrome.exe",
 			os.Getenv("ProgramFiles(x86)") + "/Chromium/Application/chrome.exe",
+			os.Getenv("ProgramFiles(x86)") + "/Microsoft/Edge/Application/msedge.exe",
+			os.Getenv("ProgramFiles") + "/Microsoft/Edge/Application/msedge.exe",
 		}
 	default:
 		paths = []string{
