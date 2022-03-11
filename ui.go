@@ -26,35 +26,9 @@ type ui struct {
 	tmpDir string
 }
 
-var defaultChromeArgs = []string{
-	"--disable-background-networking",
-	"--disable-background-timer-throttling",
-	"--disable-backgrounding-occluded-windows",
-	"--disable-breakpad",
-	"--disable-client-side-phishing-detection",
-	"--disable-default-apps",
-	"--disable-dev-shm-usage",
-	"--disable-infobars",
-	"--disable-extensions",
-	"--disable-features=site-per-process",
-	"--disable-hang-monitor",
-	"--disable-ipc-flooding-protection",
-	"--disable-popup-blocking",
-	"--disable-prompt-on-repost",
-	"--disable-renderer-backgrounding",
-	"--disable-sync",
-	"--disable-translate",
-	"--disable-windows10-custom-titlebar",
-	"--metrics-recording-only",
-	"--no-first-run",
-	"--no-default-browser-check",
-	"--safebrowsing-disable-auto-update",
-	"--enable-automation",
-	"--password-store=basic",
-	"--use-mock-keychain",
-}
+var DefaultChromeArgs = append(BrowserChromeArgs, []string{"--disable-infobars", "--disable-extensions"}...)
 
-var lesserChromeArgs = []string{
+var BrowserChromeArgs = []string{
 	"--disable-background-networking",
 	"--disable-background-timer-throttling",
 	"--disable-backgrounding-occluded-windows",
@@ -108,7 +82,7 @@ func NewAsUser(url, dir, user string, width, height int, customArgs ...string) (
 		}
 		dir, tmpDir = name, name
 	}
-	args := append(defaultChromeArgs, fmt.Sprintf("--app=%s", url))
+	args := append(DefaultChromeArgs, fmt.Sprintf("--app=%s", url))
 	args = append(args, fmt.Sprintf("--user-data-dir=%s", dir))
 	args = append(args, fmt.Sprintf("--window-size=%d,%d", width, height))
 	args = append(args, customArgs...)
@@ -142,7 +116,7 @@ func NewChromium(url, dir string, width, height int, customArgs ...string) (UI, 
 		}
 		dir, tmpDir = name, name
 	}
-	args := append(lesserChromeArgs, url)
+	args := append(BrowserChromeArgs, url)
 	args = append(args, fmt.Sprintf("--user-data-dir=%s", dir))
 	args = append(args, fmt.Sprintf("--window-size=%d,%d", width, height))
 	args = append(args, customArgs...)
