@@ -49,7 +49,8 @@ var defaultChromeArgs = []string{
 	"--no-first-run",
 	"--no-default-browser-check",
 	"--safebrowsing-disable-auto-update",
-	"--enable-automation",
+	// removed https://stackoverflow.com/questions/57298901/unable-to-hide-chrome-is-being-controlled-by-automated-software-infobar-within
+	// "--enable-automation",
 	"--password-store=basic",
 	"--use-mock-keychain",
 }
