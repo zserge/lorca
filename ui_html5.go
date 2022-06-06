@@ -55,7 +55,7 @@ func NewHtml5(executable, url, dir string, width, height int, additionalArgs ...
 	args = append(args, additionalArgs...)
 	args = append(args, "--remote-debugging-port=0")
 
-	chrome, err := newChromeWithArgs(ChromiumExecutable(), args...)
+	chrome, err := newChromeWithArgs(executable, args...)
 	done := make(chan struct{})
 	if err != nil {
 		return nil, err
