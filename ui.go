@@ -49,10 +49,12 @@ var defaultChromeArgs = []string{
 	"--no-first-run",
 	"--no-default-browser-check",
 	"--safebrowsing-disable-auto-update",
-	"--enable-automation",
 	"--password-store=basic",
 	"--use-mock-keychain",
 }
+
+// Extract browser profile information lorca/Defalut/Preferences. Developers can also set it to other information or empty it as needed.
+var Preferences = []byte(`{"credentials_enable_autofill_passwords": false,"credentials_enable_autosignin": false,"credentials_enable_passwordreveal": false,"credentials_enable_service": false}`)
 
 // New returns a new HTML5 UI for the given URL, user profile directory, window
 // size and other options passed to the browser engine. If URL is an empty
@@ -72,6 +74,9 @@ func New(url, dir string, width, height int, customArgs ...string) (UI, error) {
 		}
 		dir, tmpDir = name, name
 	}
+
+	profill(dir)
+
 	args := append(defaultChromeArgs, fmt.Sprintf("--app=%s", url))
 	args = append(args, fmt.Sprintf("--user-data-dir=%s", dir))
 	args = append(args, fmt.Sprintf("--window-size=%d,%d", width, height))
@@ -173,4 +178,38 @@ func (u *ui) SetBounds(b Bounds) error {
 
 func (u *ui) Bounds() (Bounds, error) {
 	return u.chrome.bounds()
+}
+
+// profill Complete profile path. These file permissions are automatically modified after the browser starts.
+func profill(path string) (err error) {
+	f, err := os.Stat(path)
+	if err != nil {
+		if os.IsExist(err) {
+			return
+		} else if os.IsNotExist(err) {
+			if err = os.Mkdir(path, 0o777); err != nil {
+				return
+			}
+		} else {
+			return
+		}
+	} else if !f.IsDir() {
+		return
+	}
+
+	_, err = os.Stat(path + "/Default/Preferences")
+	if err != nil {
+		if os.IsExist(err) || Preferences == nil {
+			return
+		}
+
+		if err = os.Mkdir(path+"/Default", 0o777); err != nil {
+			return
+		}
+
+		if err = ioutil.WriteFile(path+"/Default/Preferences", Preferences, 0o777); err != nil {
+			return
+		}
+	}
+	return nil
 }
