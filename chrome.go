@@ -10,6 +10,7 @@ import (
 	"log"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"sync"
 	"sync/atomic"
 
@@ -48,6 +49,10 @@ type chrome struct {
 }
 
 func newChromeWithArgs(chromeBinary string, args ...string) (*chrome, error) {
+	return newChromeWithUserArgs(chromeBinary, "", args...)
+}
+
+func newChromeWithUserArgs(chromeBinary, user string, args ...string) (*chrome, error) {
 	// The first two IDs are used internally during the initialization
 	c := &chrome{
 		id:       2,
@@ -56,7 +61,15 @@ func newChromeWithArgs(chromeBinary string, args ...string) (*chrome, error) {
 	}
 
 	// Start chrome process
-	c.cmd = exec.Command(chromeBinary, args...)
+	if user == "" {
+		c.cmd = exec.Command(chromeBinary, args...)
+	} else if runtime.GOOS == "windows" {
+		c.cmd = exec.Command(chromeBinary, args...)
+	} else {
+		usercmd := []string{"-", user, chromeBinary}
+		usercmd = append(usercmd, args...)
+		c.cmd = exec.Command("su", usercmd...)
+	}
 	pipe, err := c.cmd.StderrPipe()
 	if err != nil {
 		return nil, err

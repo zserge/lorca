@@ -26,7 +26,9 @@ type ui struct {
 	tmpDir string
 }
 
-var defaultChromeArgs = []string{
+var DefaultChromeArgs = append(BrowserChromeArgs, []string{"--disable-infobars", "--disable-extensions"}...)
+
+var BrowserChromeArgs = []string{
 	"--disable-background-networking",
 	"--disable-background-timer-throttling",
 	"--disable-backgrounding-occluded-windows",
@@ -34,8 +36,6 @@ var defaultChromeArgs = []string{
 	"--disable-client-side-phishing-detection",
 	"--disable-default-apps",
 	"--disable-dev-shm-usage",
-	"--disable-infobars",
-	"--disable-extensions",
 	"--disable-features=site-per-process",
 	"--disable-hang-monitor",
 	"--disable-ipc-flooding-protection",
@@ -62,6 +62,16 @@ var defaultChromeArgs = []string{
 // ui.Close(). You might want to use "--headless" custom CLI argument to test
 // your UI code.
 func New(url, dir string, width, height int, customArgs ...string) (UI, error) {
+	return NewAsUser(url, dir, "", width, height, customArgs...)
+}
+
+// NewAsUser returns a new HTML5 UI for the given URL, user profile directory, window
+// size and other options passed to the browser engine. If URL is an empty
+// string - a blank page is displayed. If user profile directory is an empty
+// string - a temporary directory is created and it will be removed on
+// ui.Close(). You might want to use "--headless" custom CLI argument to test
+// your UI code.
+func NewAsUser(url, dir, user string, width, height int, customArgs ...string) (UI, error) {
 	if url == "" {
 		url = "data:text/html,<html></html>"
 	}
@@ -73,11 +83,45 @@ func New(url, dir string, width, height int, customArgs ...string) (UI, error) {
 		}
 		dir, tmpDir = name, name
 	}
-	args := append(defaultChromeArgs, fmt.Sprintf("--app=%s", url))
+	args := append(DefaultChromeArgs, fmt.Sprintf("--app=%s", url))
 	args = append(args, fmt.Sprintf("--user-data-dir=%s", dir))
 	args = append(args, fmt.Sprintf("--window-size=%d,%d", width, height))
 	args = append(args, customArgs...)
 	args = append(args, "--remote-debugging-port=0")
+
+	chrome, err := newChromeWithUserArgs(ChromeExecutable(), user, args...)
+	done := make(chan struct{})
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		chrome.cmd.Wait()
+		close(done)
+	}()
+	return &ui{chrome: chrome, done: done, tmpDir: tmpDir}, nil
+}
+
+// NewChromium is like NewAsUser, except it omitts the --app flag by default effectively
+// making it a Chromium "Profile Wrapper" which can be used to launch Chromium with custom
+// args, programattically, in Go.
+func NewChromium(url, dir string, width, height int, customArgs ...string) (UI, error) {
+	if url == "" {
+		url = "data:text/html,<html></html>"
+	}
+	tmpDir := ""
+	if dir == "" {
+		name, err := ioutil.TempDir("", "lorca")
+		if err != nil {
+			return nil, err
+		}
+		dir, tmpDir = name, name
+	}
+	args := append(BrowserChromeArgs, url)
+	args = append(args, fmt.Sprintf("--user-data-dir=%s", dir))
+	args = append(args, fmt.Sprintf("--window-size=%d,%d", width, height))
+	args = append(args, customArgs...)
+	//args = append(args, "--remote-debugging-port=0")
 
 	chrome, err := newChromeWithArgs(ChromeExecutable(), args...)
 	done := make(chan struct{})
