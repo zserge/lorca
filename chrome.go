@@ -2,6 +2,7 @@ package lorca
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,7 +14,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"golang.org/x/net/websocket"
+	"github.com/coder/websocket"
+	"github.com/coder/websocket/wsjson"
 )
 
 type h = map[string]interface{}
@@ -75,7 +77,7 @@ func newChromeWithArgs(chromeBinary string, args ...string) (*chrome, error) {
 	wsURL := m[1]
 
 	// Open a websocket
-	c.ws, err = websocket.Dial(wsURL, "", "http://127.0.0.1")
+	c.ws, _, err = websocket.Dial(context.Background(), wsURL, nil)
 	if err != nil {
 		c.kill()
 		return nil, err
@@ -123,7 +125,7 @@ func newChromeWithArgs(chromeBinary string, args ...string) (*chrome, error) {
 }
 
 func (c *chrome) findTarget() (string, error) {
-	err := websocket.JSON.Send(c.ws, h{
+	err := wsjson.Write(context.Background(), c.ws, h{
 		"id": 0, "method": "Target.setDiscoverTargets", "params": h{"discover": true},
 	})
 	if err != nil {
@@ -131,7 +133,7 @@ func (c *chrome) findTarget() (string, error) {
 	}
 	for {
 		m := msg{}
-		if err = websocket.JSON.Receive(c.ws, &m); err != nil {
+		if err = wsjson.Read(context.Background(), c.ws, &m); err != nil {
 			return "", err
 		} else if m.Method == "Target.targetCreated" {
 			target := struct {
@@ -150,7 +152,7 @@ func (c *chrome) findTarget() (string, error) {
 }
 
 func (c *chrome) startSession(target string) (string, error) {
-	err := websocket.JSON.Send(c.ws, h{
+	err := wsjson.Write(context.Background(), c.ws, h{
 		"id": 1, "method": "Target.attachToTarget", "params": h{"targetId": target},
 	})
 	if err != nil {
@@ -158,7 +160,7 @@ func (c *chrome) startSession(target string) (string, error) {
 	}
 	for {
 		m := msg{}
-		if err = websocket.JSON.Receive(c.ws, &m); err != nil {
+		if err = wsjson.Read(context.Background(), c.ws, &m); err != nil {
 			return "", err
 		} else if m.ID == 1 {
 			if m.Error != nil {
@@ -253,7 +255,7 @@ type targetMessage struct {
 func (c *chrome) readLoop() {
 	for {
 		m := msg{}
-		if err := websocket.JSON.Receive(c.ws, &m); err != nil {
+		if err := wsjson.Read(context.Background(), c.ws, &m); err != nil {
 			return
 		}
 
@@ -354,7 +356,7 @@ func (c *chrome) send(method string, params h) (json.RawMessage, error) {
 	c.pending[int(id)] = resc
 	c.Unlock()
 
-	if err := websocket.JSON.Send(c.ws, h{
+	if err := wsjson.Write(context.Background(), c.ws, h{
 		"id":     int(id),
 		"method": "Target.sendMessageToTarget",
 		"params": h{"message": string(b), "sessionId": c.session},
@@ -505,7 +507,7 @@ func (c *chrome) png(x, y, width, height int, bg uint32, scale float32) ([]byte,
 
 func (c *chrome) kill() error {
 	if c.ws != nil {
-		if err := c.ws.Close(); err != nil {
+		if err := c.ws.CloseNow(); err != nil {
 			return err
 		}
 	}
