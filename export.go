@@ -2,7 +2,6 @@ package lorca
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 )
 
@@ -45,13 +44,13 @@ func PNG(url, script string, x, y, width, height int, bg uint32, scale float32) 
 }
 
 func doHeadless(url string, f func(c *chrome) ([]byte, error)) ([]byte, error) {
-	dir, err := ioutil.TempDir("", "lorca")
+	dir, err := os.MkdirTemp("", "lorca")
 	if err != nil {
 		return nil, err
 	}
 	defer os.RemoveAll(dir)
 	args := append(defaultChromeArgs, fmt.Sprintf("--user-data-dir=%s", dir), "--remote-debugging-port=0", "--headless", url)
-	chrome, err := newChromeWithArgs(ChromeExecutable(), args...)
+	chrome, err := newChromeWithArgs(ChromeExecutable(""), args...)
 	if err != nil {
 		return nil, err
 	}

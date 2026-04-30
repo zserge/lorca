@@ -19,3 +19,4 @@ example/Example.app
 !/.idea/inspectionProfiles/Project_Default.xml
 !/.idea/dictionaries/*.xml
 !/.idea/go.xml
+/docs

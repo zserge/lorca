@@ -1,5 +1,5 @@
-module github.com/zserge/lorca
+module github.com/davidarthurcole/lorca
 
-go 1.16
+go 1.25.0
 
-require golang.org/x/net v0.0.0-20200222125558-5a598a2470a0
+require golang.org/x/net v0.49.0

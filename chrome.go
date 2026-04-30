@@ -1,22 +1,23 @@
 package lorca
 
 import (
-	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
+	"net"
+	"net/http"
 	"os/exec"
-	"regexp"
+	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"golang.org/x/net/websocket"
 )
 
-type h = map[string]interface{}
+type h = map[string]any
 
 // Result is a struct for the resulting value of the JS expression or an error.
 type result struct {
@@ -24,7 +25,7 @@ type result struct {
 	Err   error
 }
 
-type bindingFunc func(args []json.RawMessage) (interface{}, error)
+type bindingFunc func(args []json.RawMessage) (any, error)
 
 // Msg is a struct for incoming messages (results and async events)
 type msg struct {
@@ -37,42 +38,85 @@ type msg struct {
 
 type chrome struct {
 	sync.Mutex
-	cmd      *exec.Cmd
-	ws       *websocket.Conn
-	id       int32
-	target   string
-	session  string
-	window   int
-	pending  map[int]chan result
-	bindings map[string]bindingFunc
+	wsMu         sync.Mutex // serializes websocket writes
+	cmd          *exec.Cmd
+	ws           *websocket.Conn
+	id           int32
+	target       string
+	session      string
+	window       int
+	pending      map[int]chan result
+	debugPort    int
+	doneC        chan struct{}
+	appURL       string // URL set by load(); used to redirect back-navigation
+	blockBackNav bool   // when true, navigations away from appURL are redirected back
+}
+
+type browserVersion struct {
+	Browser              string `json:"Browser"`
+	ProtocolVersion      string `json:"Protocol-Version"`
+	UserAgent            string `json:"User-Agent"`
+	V8Version            string `json:"V8-Version"`
+	WebkitVersion        string `json:"Webkit-Version"`
+	WebSocketDebuggerUrl string `json:"webSocketDebuggerUrl"`
+}
+
+func getFreePort() (int, error) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return 0, err
+	}
+	defer ln.Close()
+	return ln.Addr().(*net.TCPAddr).Port, nil
 }
 
 func newChromeWithArgs(chromeBinary string, args ...string) (*chrome, error) {
 	// The first two IDs are used internally during the initialization
 	c := &chrome{
-		id:       2,
-		pending:  map[int]chan result{},
-		bindings: map[string]bindingFunc{},
+		id:      2,
+		pending: map[int]chan result{},
 	}
 
-	// Start chrome process
-	c.cmd = exec.Command(chromeBinary, args...)
-	pipe, err := c.cmd.StderrPipe()
+	debugPort, err := getFreePort()
 	if err != nil {
 		return nil, err
 	}
+
+	// Start chrome process
+	args = append(args, fmt.Sprintf("--remote-debugging-port=%d", debugPort))
+	c.cmd = exec.Command(chromeBinary, args...)
 	if err := c.cmd.Start(); err != nil {
 		return nil, err
 	}
 
-	// Wait for websocket address to be printed to stderr
-	re := regexp.MustCompile(`^DevTools listening on (ws://.*?)\r?\n$`)
-	m, err := readUntilMatch(pipe, re)
+	// Retry mechanism
+	startTime := time.Now()
+	var res *http.Response
+	for {
+		res, err = http.Get(fmt.Sprintf("http://127.0.0.1:%d/json/version", debugPort))
+		if err == nil {
+			break
+		}
+		if time.Since(startTime) > 5*time.Second {
+			return nil, fmt.Errorf("failed to reach /json/version within 5 seconds: %w", err)
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	c.debugPort = debugPort
+
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		c.kill()
 		return nil, err
 	}
-	wsURL := m[1]
+
+	browserVer := &browserVersion{}
+
+	err = json.Unmarshal(body, &browserVer)
+	if err != nil {
+		return nil, err
+	}
+
+	wsURL := browserVer.WebSocketDebuggerUrl
 
 	// Open a websocket
 	c.ws, err = websocket.Dial(wsURL, "", "http://127.0.0.1")
@@ -93,7 +137,10 @@ func newChromeWithArgs(chromeBinary string, args ...string) (*chrome, error) {
 		c.kill()
 		return nil, err
 	}
+	c.doneC = make(chan struct{})
+	go func() { c.cmd.Wait(); close(c.doneC) }()
 	go c.readLoop()
+
 	for method, args := range map[string]h{
 		"Page.enable":          nil,
 		"Target.setAutoAttach": {"autoAttach": true, "waitForDebuggerOnStart": false},
@@ -105,7 +152,6 @@ func newChromeWithArgs(chromeBinary string, args ...string) (*chrome, error) {
 	} {
 		if _, err := c.send(method, args); err != nil {
 			c.kill()
-			c.cmd.Wait()
 			return nil, err
 		}
 	}
@@ -244,7 +290,10 @@ type targetMessage struct {
 		} `json:"result"`
 		Exception struct {
 			Exception struct {
-				Value json.RawMessage `json:"value"`
+				Type        string          `json:"type"`
+				Subtype     string          `json:"subtype"`
+				Description string          `json:"description"`
+				Value       json.RawMessage `json:"value"`
 			} `json:"exception"`
 		} `json:"exceptionDetails"`
 	} `json:"result"`
@@ -271,41 +320,32 @@ func (c *chrome) readLoop() {
 
 			if res.ID == 0 && res.Method == "Runtime.consoleAPICalled" || res.Method == "Runtime.exceptionThrown" {
 				log.Println(params.Message)
-			} else if res.ID == 0 && res.Method == "Runtime.bindingCalled" {
-				payload := struct {
-					Name string            `json:"name"`
-					Seq  int               `json:"seq"`
-					Args []json.RawMessage `json:"args"`
-				}{}
-				json.Unmarshal([]byte(res.Params.Payload), &payload)
+			}
 
+			if res.Method == "Page.frameNavigated" {
 				c.Lock()
-				binding, ok := c.bindings[res.Params.Name]
+				blockBackNav := c.blockBackNav
+				appURL := c.appURL
 				c.Unlock()
-				if ok {
-					jsString := func(v interface{}) string { b, _ := json.Marshal(v); return string(b) }
-					go func() {
-						result, error := "", `""`
-						if r, err := binding(payload.Args); err != nil {
-							error = jsString(err.Error())
-						} else if b, err := json.Marshal(r); err != nil {
-							error = jsString(err.Error())
-						} else {
-							result = string(b)
+				if blockBackNav && appURL != "" {
+					var navEvent struct {
+						Params struct {
+							Frame struct {
+								URL string `json:"url"`
+							} `json:"frame"`
+						} `json:"params"`
+					}
+					if json.Unmarshal([]byte(params.Message), &navEvent) == nil {
+						navURL := navEvent.Params.Frame.URL
+						if !strings.HasPrefix(navURL, appURL) {
+							go func(redirectURL string) {
+								if _, err := c.send("Page.navigate", h{"url": redirectURL}); err != nil {
+									log.Printf("lorca/chrome: redirect to appURL failed: %v", err)
+								}
+							}(appURL)
 						}
-						expr := fmt.Sprintf(`
-							if (%[4]s) {
-								window['%[1]s']['errors'].get(%[2]d)(%[4]s);
-							} else {
-								window['%[1]s']['callbacks'].get(%[2]d)(%[3]s);
-							}
-							window['%[1]s']['callbacks'].delete(%[2]d);
-							window['%[1]s']['errors'].delete(%[2]d);
-							`, payload.Name, payload.Seq, result, error)
-						c.send("Runtime.evaluate", h{"expression": expr, "contextId": res.Params.ID})
-					}()
+					}
 				}
-				continue
 			}
 
 			c.Lock()
@@ -321,6 +361,8 @@ func (c *chrome) readLoop() {
 				resc <- result{Err: errors.New(res.Error.Message)}
 			} else if res.Result.Exception.Exception.Value != nil {
 				resc <- result{Err: errors.New(string(res.Result.Exception.Exception.Value))}
+			} else if res.Result.Exception.Exception.Subtype == "error" {
+				resc <- result{Err: errors.New(res.Result.Exception.Exception.Description)}
 			} else if res.Result.Result.Type == "object" && res.Result.Result.Subtype == "error" {
 				resc <- result{Err: errors.New(res.Result.Result.Description)}
 			} else if res.Result.Result.Type != "" {
@@ -354,11 +396,14 @@ func (c *chrome) send(method string, params h) (json.RawMessage, error) {
 	c.pending[int(id)] = resc
 	c.Unlock()
 
-	if err := websocket.JSON.Send(c.ws, h{
+	c.wsMu.Lock()
+	err = websocket.JSON.Send(c.ws, h{
 		"id":     int(id),
 		"method": "Target.sendMessageToTarget",
 		"params": h{"message": string(b), "sessionId": c.session},
-	}); err != nil {
+	})
+	c.wsMu.Unlock()
+	if err != nil {
 		return nil, err
 	}
 	res := <-resc
@@ -367,61 +412,24 @@ func (c *chrome) send(method string, params h) (json.RawMessage, error) {
 
 func (c *chrome) load(url string) error {
 	_, err := c.send("Page.navigate", h{"url": url})
+	if err == nil {
+		c.Lock()
+		c.appURL = url
+		c.Unlock()
+	}
 	return err
 }
+
+func (c *chrome) setBlockBackNavigation(enable bool) {
+	c.Lock()
+	c.blockBackNav = enable
+	c.Unlock()
+}
+
+func (c *chrome) setAppUserModelID(_ string) {}
 
 func (c *chrome) eval(expr string) (json.RawMessage, error) {
 	return c.send("Runtime.evaluate", h{"expression": expr, "awaitPromise": true, "returnByValue": true})
-}
-
-func (c *chrome) bind(name string, f bindingFunc) error {
-	c.Lock()
-	// check if binding already exists
-	_, exists := c.bindings[name]
-
-	c.bindings[name] = f
-	c.Unlock()
-
-	if exists {
-		// Just replace callback and return, as the binding was already added to js
-		// and adding it again would break it.
-		return nil
-	}
-
-	if _, err := c.send("Runtime.addBinding", h{"name": name}); err != nil {
-		return err
-	}
-	script := fmt.Sprintf(`(() => {
-	const bindingName = '%s';
-	const binding = window[bindingName];
-	window[bindingName] = async (...args) => {
-		const me = window[bindingName];
-		let errors = me['errors'];
-		let callbacks = me['callbacks'];
-		if (!callbacks) {
-			callbacks = new Map();
-			me['callbacks'] = callbacks;
-		}
-		if (!errors) {
-			errors = new Map();
-			me['errors'] = errors;
-		}
-		const seq = (me['lastSeq'] || 0) + 1;
-		me['lastSeq'] = seq;
-		const promise = new Promise((resolve, reject) => {
-			callbacks.set(seq, resolve);
-			errors.set(seq, reject);
-		});
-		binding(JSON.stringify({name: bindingName, seq, args}));
-		return promise;
-	}})();
-	`, name)
-	_, err := c.send("Page.addScriptToEvaluateOnNewDocument", h{"source": script})
-	if err != nil {
-		return err
-	}
-	_, err = c.eval(script)
-	return err
 }
 
 func (c *chrome) setBounds(b Bounds) error {
@@ -503,30 +511,60 @@ func (c *chrome) png(x, y, width, height int, bg uint32, scale float32) ([]byte,
 	return pdf.Data, err
 }
 
-func (c *chrome) kill() error {
+func (c *chrome) kill() {
 	if c.ws != nil {
-		if err := c.ws.Close(); err != nil {
-			return err
-		}
+		c.ws.Close()
 	}
-	// TODO: cancel all pending requests
+	c.Lock()
+	for _, ch := range c.pending {
+		ch <- result{Err: errors.New("chrome closed")}
+	}
+	c.pending = map[int]chan result{}
+	c.Unlock()
+
 	if state := c.cmd.ProcessState; state == nil || !state.Exited() {
-		return c.cmd.Process.Kill()
+		killProcessTree(c.cmd.Process.Pid)
 	}
-	return nil
 }
 
-func readUntilMatch(r io.ReadCloser, re *regexp.Regexp) ([]string, error) {
-	br := bufio.NewReader(r)
-	for {
-		if line, err := br.ReadString('\n'); err != nil {
-			r.Close()
-			return nil, err
-		} else if m := re.FindStringSubmatch(line); m != nil {
-			go io.Copy(ioutil.Discard, br)
-			return m, nil
-		}
+func (c *chrome) done() <-chan struct{} { return c.doneC }
+
+func (c *chrome) injectScript(js string) error {
+	if _, err := c.send("Page.addScriptToEvaluateOnNewDocument", h{"source": js}); err != nil {
+		return err
 	}
+	_, err := c.eval(js)
+	return err
+}
+
+// evalNoWait sends a Runtime.evaluate command without waiting for the
+// response.  The response is received by readLoop and silently dropped
+// (no entry in c.pending).  Used for fire-and-forget evals where
+// correctness is ensured by another path (e.g. addScriptToEvaluateOnNewDocument).
+func (c *chrome) evalNoWait(expr string) {
+	id := int(atomic.AddInt32(&c.id, 1))
+	b, _ := json.Marshal(h{"id": id, "method": "Runtime.evaluate", "params": h{"expression": expr, "awaitPromise": false}})
+	c.wsMu.Lock()
+	websocket.JSON.Send(c.ws, h{ //nolint:errcheck
+		"id":     id,
+		"method": "Target.sendMessageToTarget",
+		"params": h{"message": string(b), "sessionId": c.session},
+	})
+	c.wsMu.Unlock()
+}
+
+func (c *chrome) injectBinding(name string) error {
+	script := bindingScript(name)
+	// Register the binding script for all future page loads (authoritative path).
+	if _, err := c.send("Page.addScriptToEvaluateOnNewDocument", h{"source": script}); err != nil {
+		return err
+	}
+	// Fire-and-forget eval on the current page.  With 50+ bindings registered
+	// at startup, blocking on each eval adds up.  The addScriptToEvaluateOnNewDocument
+	// above ensures the binding is installed on the next navigation; this eval
+	// is only a convenience for the currently-loaded page.
+	c.evalNoWait(script)
+	return nil
 }
 
 func contains(arr []string, x string) bool {
